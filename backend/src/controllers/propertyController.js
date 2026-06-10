@@ -198,6 +198,14 @@ export const getPropertyById = async (req, res) => {
       return res.status(404).json({ error: 'Объект не найден' });
     }
 
+    // Считаем просмотры (только для APPROVED, не от владельца)
+    if (property.status === 'APPROVED' && !isOwner) {
+      prisma.property.update({
+        where: { id: parseInt(id) },
+        data: { viewCount: { increment: 1 } },
+      }).catch(() => {});
+    }
+
     res.json({ property });
   } catch (error) {
     console.error('Get property by ID error:', error);

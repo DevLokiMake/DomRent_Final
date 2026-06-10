@@ -48,9 +48,10 @@ model User {
   name       String?
   phone      String?
   avatar     String?    // URL аватара (Cloudinary)
-  telegramId String?
-  role       Role       @default(USER)
-  isBanned   Boolean    @default(false)
+  telegramId    String?
+  expoPushToken String?    // Expo push notification token
+  role          Role       @default(USER)
+  isBanned      Boolean    @default(false)
   properties    Property[]
   bookings      Booking[]
   favorites     Favorite[]
@@ -72,6 +73,7 @@ model Property {
   hasWifi         Boolean          @default(false)
   hasParking      Boolean          @default(false)
   petsAllowed     Boolean          @default(false)
+  viewCount       Int              @default(0)  // Счётчик просмотров
   status          ModerationStatus @default(PENDING)
   rejectionReason String?          // Причина отклонения от админа
   cityId          Int

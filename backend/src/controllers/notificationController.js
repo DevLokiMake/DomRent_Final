@@ -1,17 +1,46 @@
 import { PrismaClient } from '@prisma/client';
+import { sendPushNotification } from '../services/pushNotificationService.js';
 
 const prisma = new PrismaClient();
 
 /**
- * Утилита: создать уведомление (используется внутри других контроллеров)
+ * Утилита: создать in-app уведомление + отправить push если есть токен
  */
 export const createNotification = async (userId, type, title, body, entityId = null) => {
   try {
-    return await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: { userId, type, title, body, entityId }
     });
+    // Попробуем отправить push если у пользователя есть токен
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { expoPushToken: true }
+    });
+    if (user?.expoPushToken) {
+      await sendPushNotification(user.expoPushToken, title, body, { type, entityId });
+    }
+    return notification;
   } catch (err) {
     console.error('createNotification error:', err);
+  }
+};
+
+/**
+ * POST /api/notifications/push-token
+ * Сохранить Expo push token текущего пользователя
+ */
+export const savePushToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'token обязателен' });
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { expoPushToken: token },
+    });
+    res.json({ message: 'Push token сохранён' });
+  } catch (error) {
+    console.error('savePushToken error:', error);
+    res.status(500).json({ error: 'Ошибка сохранения токена' });
   }
 };
 

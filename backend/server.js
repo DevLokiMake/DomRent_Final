@@ -15,6 +15,8 @@ import notificationRoutes from './src/routes/notification.js';
 import uploadRoutes from './src/routes/upload.js';
 import adminRoutes from './src/routes/admin.js';
 import telegramRoutes from './src/routes/telegram.js';
+import landlordRoutes from './src/routes/landlord.js';
+import reportRoutes from './src/routes/report.js';
 
 dotenv.config();
 
@@ -68,6 +70,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/telegram', telegramRoutes);
+app.use('/api/landlord', landlordRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

@@ -4,8 +4,13 @@ import { useTranslation } from "react-i18next";
 import {
   Users, Home, Calendar, TrendingUp, ShieldOff, Shield,
   CheckCircle, XCircle, Clock, Search, ChevronLeft, ChevronRight,
-  AlertTriangle, Loader, BarChart3, ArrowUpRight, ClipboardList, Star, Trash2
+  AlertTriangle, Loader, BarChart3, ArrowUpRight, ClipboardList, Star, Trash2,
+  Download, Activity
 } from "lucide-react";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend
+} from "recharts";
 import axiosInstance from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -51,6 +56,17 @@ interface AdminReview {
   property: { id: number; title: string };
 }
 
+interface MonthlyUsers    { month: string; users: number; }
+interface MonthlyBookings { month: string; bookings: number; revenue: number; }
+interface TopProperty     { id: number; title: string; city: string; bookings: number; viewCount: number; }
+interface TopCity         { city: string; bookings: number; revenue: number; }
+interface AnalyticsData {
+  monthlyUsers: MonthlyUsers[];
+  monthlyBookings: MonthlyBookings[];
+  top10: TopProperty[];
+  topCities: TopCity[];
+}
+
 // ─── StatCard ─────────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, sub, trend, iconBg }: {
   icon: React.ReactNode; label: string; value: string | number;
@@ -74,7 +90,7 @@ const StatCard = ({ icon, label, value, sub, trend, iconBg }: {
 );
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-type Tab = "stats" | "users" | "moderation" | "bookings" | "reviews" | "audit";
+type Tab = "stats" | "users" | "moderation" | "bookings" | "reviews" | "audit" | "analytics";
 
 const AdminPage = () => {
   const { user } = useAuth();
@@ -255,6 +271,28 @@ const AdminPage = () => {
     if (tab === "audit") fetchAudit(auditPage);
   }, [tab, auditPage, fetchAudit]);
 
+  // ─── Analytics ────────────────────────────────────────────────────────────
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "analytics") return;
+    setAnalyticsLoading(true);
+    axiosInstance.get("/admin/analytics")
+      .then(r => setAnalytics(r.data))
+      .catch(console.error)
+      .finally(() => setAnalyticsLoading(false));
+  }, [tab]);
+
+  const downloadPdf = (url: string, filename: string) => {
+    axiosInstance.get(url, { responseType: "blob" }).then(r => {
+      const href = URL.createObjectURL(r.data);
+      const a = document.createElement("a");
+      a.href = href; a.download = filename;
+      a.click(); URL.revokeObjectURL(href);
+    }).catch(() => alert("Ошибка генерации отчёта"));
+  };
+
   // ─── Configs ──────────────────────────────────────────────────────────────
   const ROLE_CFG: Record<string, { label: string; cls: string }> = {
     USER:     { label: t('admin.users.roles.USER'),     cls: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300" },
@@ -284,6 +322,7 @@ const AdminPage = () => {
     { id: "bookings",   label: "Бронирования",             icon: <Calendar className="w-4 h-4" /> },
     { id: "reviews",    label: "Отзывы",                   icon: <Star className="w-4 h-4" /> },
     { id: "audit",      label: t('admin.tabs.audit'),      icon: <ClipboardList className="w-4 h-4" /> },
+    { id: "analytics",  label: "Аналитика",                icon: <Activity className="w-4 h-4" /> },
   ];
 
   // ─── Pagination helper ────────────────────────────────────────────────────
@@ -818,6 +857,141 @@ const AdminPage = () => {
             )}
             <Pagination page={auditPage} total={totalAuditPages} onPage={setAuditPage} />
           </div>
+        )}
+
+        {/* ─── ANALYTICS ──────────────────────────────────────────────────── */}
+        {tab === "analytics" && (
+          analyticsLoading ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader className="w-8 h-8 animate-spin text-gray-400" />
+            </div>
+          ) : analytics ? (
+            <div className="space-y-6">
+
+              {/* PDF Downloads */}
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { label: "Отчёт: Пользователи", url: "/reports/admin/users", file: "users.pdf" },
+                  { label: "Отчёт: Бронирования", url: "/reports/admin/bookings", file: "bookings.pdf" },
+                  { label: "Отчёт: Объявления", url: "/reports/admin/properties", file: "properties.pdf" },
+                  { label: "Отчёт: Выручка", url: "/reports/admin/revenue", file: "revenue.pdf" },
+                ].map(r => (
+                  <button key={r.url} onClick={() => downloadPdf(r.url, r.file)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 rounded-2xl hover:border-rose-300 hover:text-rose-600 dark:hover:text-rose-400 transition shadow-sm">
+                    <Download className="w-4 h-4" />{r.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Users per month */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-card border border-gray-100 dark:border-gray-800">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-500" />Регистрации пользователей по месяцам
+                </h2>
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={analytics.monthlyUsers} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gUsers" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip formatter={(v: number) => [v, "Пользователи"]} />
+                    <Area type="monotone" dataKey="users" stroke="#3b82f6" fill="url(#gUsers)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Bookings + Revenue per month */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-card border border-gray-100 dark:border-gray-800">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-violet-500" />Бронирования и доход по месяцам
+                </h2>
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={analytics.monthlyBookings} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gBook" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(v: number, name: string) => name === "revenue" ? [`${v.toLocaleString()} ₸`, "Доход"] : [v, "Бронирований"]} />
+                    <Legend formatter={(v) => v === "bookings" ? "Бронирований" : "Доход (₸)"} />
+                    <Area yAxisId="left" type="monotone" dataKey="bookings" stroke="#8b5cf6" fill="url(#gBook)" strokeWidth={2} dot={false} />
+                    <Area yAxisId="right" type="monotone" dataKey="revenue" stroke="#f43f5e" fill="url(#gRev)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top cities */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-card border border-gray-100 dark:border-gray-800">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                  <Home className="w-4 h-4 text-emerald-500" />Топ городов по бронированиям
+                </h2>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={analytics.topCities} layout="vertical" margin={{ top: 0, right: 16, left: 4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="city" tick={{ fontSize: 11 }} width={80} />
+                    <Tooltip formatter={(v: number) => [v, "Бронирований"]} />
+                    <Bar dataKey="bookings" fill="#10b981" radius={[0, 6, 6, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top 10 properties table */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-card border border-gray-100 dark:border-gray-800">
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-500" />Топ-10 объявлений
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-800">
+                        <th className="pb-3 font-semibold w-8">#</th>
+                        <th className="pb-3 font-semibold">Объявление</th>
+                        <th className="pb-3 font-semibold">Город</th>
+                        <th className="pb-3 font-semibold text-right">Просмотры</th>
+                        <th className="pb-3 font-semibold text-right">Брон.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                      {analytics.top10.map((p, i) => (
+                        <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <td className="py-3 pr-3">
+                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
+                              i === 0 ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700" :
+                              i === 1 ? "bg-gray-100 dark:bg-gray-800 text-gray-500" :
+                              i === 2 ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600" :
+                              "bg-gray-50 dark:bg-gray-800/50 text-gray-400"
+                            }`}>{i + 1}</span>
+                          </td>
+                          <td className="py-3 font-medium text-gray-900 dark:text-white max-w-[200px] truncate">{p.title}</td>
+                          <td className="py-3 text-gray-500 dark:text-gray-400">{p.city}</td>
+                          <td className="py-3 text-right text-gray-600 dark:text-gray-400">{p.viewCount.toLocaleString()}</td>
+                          <td className="py-3 text-right font-bold text-gray-900 dark:text-white">{p.bookings}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            <div className="text-center py-24 text-gray-400">Нет данных</div>
+          )
         )}
       </div>
 

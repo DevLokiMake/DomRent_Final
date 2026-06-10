@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bell, Shield, Home, ChevronDown, LogOut, Calendar, Heart, Plus, User, Menu, X, Sun, Moon, Globe } from "lucide-react";
+import { Bell, Shield, Home, ChevronDown, LogOut, Calendar, Heart, Plus, User, Menu, X, Sun, Moon, Globe, TrendingUp } from "lucide-react";
 import HomePage from "./pages/HomePage";
 import { RegisterPage } from './pages/RegisterPage';
 import LoginPage from "./pages/LoginPage";
@@ -11,6 +11,7 @@ import FavoritesPage from "./pages/FavoritesPage";
 import CreatePropertyPage from "./pages/CreatePropertyPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
+import LandlordStatisticsPage from "./pages/LandlordStatisticsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -380,9 +381,14 @@ const Navbar = () => {
                           <Heart className="w-4 h-4 text-gray-400" />{t('nav.favorites')}
                         </Link>
                         {user.role === 'LANDLORD' && (
-                          <Link to="/create-property" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                            <Plus className="w-4 h-4 text-gray-400" />{t('nav.createListing')}
-                          </Link>
+                          <>
+                            <Link to="/create-property" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                              <Plus className="w-4 h-4 text-gray-400" />{t('nav.createListing')}
+                            </Link>
+                            <Link to="/landlord/statistics" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                              <TrendingUp className="w-4 h-4 text-gray-400" />Статистика
+                            </Link>
+                          </>
                         )}
                         {user.role === 'ADMIN' && (
                           <Link to="/admin" className="flex items-center gap-3 px-4 py-2.5 text-sm text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors font-medium">
@@ -499,6 +505,7 @@ export default function App() {
               <Route path="/create-property" element={<CreatePropertyPage />} />
               <Route path="/chat/:bookingId" element={<ChatPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/landlord/statistics" element={<LandlordStatisticsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

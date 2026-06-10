@@ -11,6 +11,7 @@ import {
   getAdminBookings,
   getAdminReviews,
   deleteAdminReview,
+  getAnalytics,
 } from '../controllers/adminController.js';
 import { authenticateToken } from '../middlewares/auth.js';
 import { requireAdmin } from '../middlewares/requireRole.js';
@@ -22,6 +23,7 @@ router.use(authenticateToken, requireAdmin);
 
 // Статистика
 router.get('/stats', getStats);
+router.get('/analytics', getAnalytics);
 
 // Пользователи
 router.get('/users', getUsers);

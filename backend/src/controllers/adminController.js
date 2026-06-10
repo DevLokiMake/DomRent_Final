@@ -112,6 +112,119 @@ export const getStats = async (req, res) => {
   }
 };
 
+// ─── Аналитика (12 месяцев) ──────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/analytics
+ * Данные для дашборда: помесячные графики за последние 12 месяцев
+ */
+export const getAnalytics = async (req, res) => {
+  try {
+    const since12mo = new Date();
+    since12mo.setMonth(since12mo.getMonth() - 11);
+    since12mo.setDate(1);
+    since12mo.setHours(0, 0, 0, 0);
+
+    const [usersRaw, bookingsRaw, top10Props, topCitiesRaw] = await Promise.all([
+      // Пользователи по месяцам
+      prisma.user.findMany({
+        where: { createdAt: { gte: since12mo } },
+        select: { createdAt: true },
+      }),
+      // Бронирования по месяцам
+      prisma.booking.findMany({
+        where: { createdAt: { gte: since12mo } },
+        select: { createdAt: true, totalPrice: true, status: true },
+      }),
+      // Топ-10 объектов
+      prisma.property.findMany({
+        where: { status: 'APPROVED' },
+        include: {
+          city: { select: { name: true } },
+          _count: { select: { bookings: true } },
+        },
+        orderBy: { bookings: { _count: 'desc' } },
+        take: 10,
+      }),
+      // Топ городов
+      prisma.booking.groupBy({
+        by: ['propertyId'],
+        _count: { id: true },
+        _sum: { totalPrice: true },
+      }),
+    ]);
+
+    // Группировка по месяцам
+    const buildMonthMap = () => {
+      const map = {};
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const key = d.toISOString().slice(0, 7);
+        map[key] = 0;
+      }
+      return map;
+    };
+
+    const usersPerMonth = buildMonthMap();
+    usersRaw.forEach(u => {
+      const k = u.createdAt.toISOString().slice(0, 7);
+      if (k in usersPerMonth) usersPerMonth[k]++;
+    });
+
+    const bookingsPerMonth = { ...buildMonthMap() };
+    const revenuePerMonth = { ...buildMonthMap() };
+    bookingsRaw.forEach(b => {
+      const k = b.createdAt.toISOString().slice(0, 7);
+      if (k in bookingsPerMonth) {
+        bookingsPerMonth[k]++;
+        if (b.status !== 'CANCELLED') revenuePerMonth[k] += b.totalPrice;
+      }
+    });
+
+    const months = Object.keys(usersPerMonth).sort();
+    const monthlyUsers = months.map(m => ({ month: m, users: usersPerMonth[m] }));
+    const monthlyBookings = months.map(m => ({
+      month: m,
+      bookings: bookingsPerMonth[m],
+      revenue: Math.round(revenuePerMonth[m] || 0),
+    }));
+
+    // Топ-10 объектов
+    const top10 = top10Props.map(p => ({
+      id: p.id,
+      title: p.title.length > 30 ? p.title.slice(0, 30) + '…' : p.title,
+      city: p.city.name,
+      bookings: p._count.bookings,
+      viewCount: p.viewCount,
+    }));
+
+    // Топ городов — агрегируем через bookings → property → city
+    const cityStats = await prisma.booking.findMany({
+      where: { status: { not: 'CANCELLED' } },
+      select: { property: { select: { city: { select: { name: true } } } }, totalPrice: true },
+      take: 10000,
+    });
+    const cityMap = {};
+    cityStats.forEach(b => {
+      const city = b.property?.city?.name;
+      if (!city) return;
+      if (!cityMap[city]) cityMap[city] = { bookings: 0, revenue: 0 };
+      cityMap[city].bookings++;
+      cityMap[city].revenue += b.totalPrice;
+    });
+    const topCities = Object.entries(cityMap)
+      .sort((a, b) => b[1].bookings - a[1].bookings)
+      .slice(0, 8)
+      .map(([city, d]) => ({ city, bookings: d.bookings, revenue: Math.round(d.revenue) }));
+
+    res.json({ monthlyUsers, monthlyBookings, top10, topCities });
+  } catch (error) {
+    console.error('getAnalytics error:', error);
+    res.status(500).json({ error: 'Ошибка получения аналитики' });
+  }
+};
+
 // ─── Управление пользователями ────────────────────────────────────────────────
 
 export const getUsers = async (req, res) => {
