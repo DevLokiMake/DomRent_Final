@@ -10,7 +10,8 @@ export const registerSchema = z.object({
   password: z.string().min(6, 'Пароль должен быть минимум 6 символов'),
   name: z.string().min(1, 'Имя обязательно').optional(),
   phone: z.string().optional(),
-  role: z.enum(['USER', 'LANDLORD', 'ADMIN']).optional()
+  // Разрешаем только USER/LANDLORD при регистрации — ADMIN назначается только через admin-панель
+  role: z.enum(['USER', 'LANDLORD']).optional().default('USER')
 });
 
 // Вход пользователя

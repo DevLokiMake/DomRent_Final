@@ -9,6 +9,8 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isSignedIn: boolean;
+  signOut: () => Promise<void>;
   signup: (email: string, password: string, name: string, role?: 'USER' | 'LANDLORD') => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -35,7 +37,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Проверяем токен и получаем данные пользователя
         try {
-          const response = await axiosInstance.get('/users/me', {
+          const response = await axiosInstance.get('/auth/me', {
             headers: {
               Authorization: `Bearer ${storedToken}`,
             },
@@ -167,6 +169,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     token,
     isLoading,
     isAuthenticated: !!user && !!token,
+    isSignedIn: !!user && !!token,
+    signOut: logout,
     signup,
     login,
     logout,

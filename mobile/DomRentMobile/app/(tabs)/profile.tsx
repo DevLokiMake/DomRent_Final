@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LogOut, User, Mail, Smartphone } from 'lucide-react-native';
+import { LogOut, User, Mail, Smartphone, Heart, Calendar, Plus } from 'lucide-react-native';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
@@ -106,6 +106,24 @@ export default function ProfileScreen() {
               {user?.telegramId ? `@${user.telegramId}` : 'Не подключено'}
             </ThemedText>
           </View>
+        </View>
+
+        {/* Quick nav */}
+        <View style={styles.quickNav}>
+          <TouchableOpacity style={styles.quickNavItem} onPress={() => router.push('/(tabs)/favorites')}>
+            <Heart size={22} color="#007AFF" />
+            <ThemedText style={styles.quickNavText}>Избранное</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickNavItem} onPress={() => router.push('/(tabs)/bookings')}>
+            <Calendar size={22} color="#007AFF" />
+            <ThemedText style={styles.quickNavText}>Бронирования</ThemedText>
+          </TouchableOpacity>
+          {user?.role === 'LANDLORD' && (
+            <TouchableOpacity style={styles.quickNavItem} onPress={() => router.push('/create-property')}>
+              <Plus size={22} color="#007AFF" />
+              <ThemedText style={styles.quickNavText}>Добавить</ThemedText>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Logout Button */}
@@ -230,5 +248,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  quickNav: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  quickNavItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  quickNavText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });

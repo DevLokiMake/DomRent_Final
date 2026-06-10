@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import authRoutes from './src/routes/auth.js';
@@ -21,6 +22,30 @@ const app = express();
 const prisma = new PrismaClient();
 
 app.use(helmet());
+
+// Rate limiting: auth endpoints — 10 попыток / 15 мин
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много попыток. Повторите через 15 минут.' },
+});
+
+// Общий лимит для всего API — 200 запросов / 15 мин
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много запросов. Повторите позже.' },
+});
+
+app.use('/api', globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+
 app.use(cors({
   origin: [
     'http://localhost:5173',

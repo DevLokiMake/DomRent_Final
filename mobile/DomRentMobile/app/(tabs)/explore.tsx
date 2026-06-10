@@ -10,7 +10,6 @@ import {
   Dimensions,
   Modal,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, Filter, X, Heart } from 'lucide-react-native';
@@ -399,36 +398,23 @@ export default function ExploreScreen() {
               <View style={styles.filterGroup}>
                 <ThemedText style={styles.filterLabel}>Город</ThemedText>
                 <View style={styles.pickerContainer}>
-                  {Platform.OS === 'android' ? (
-                    <Picker
-                      selectedValue={filters.city}
-                      onValueChange={(value) => updateFilter('city', value)}
-                      style={styles.picker}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.citiesScroll}>
+                    <TouchableOpacity
+                      style={[styles.cityPill, filters.city === '' && styles.cityPillActive]}
+                      onPress={() => updateFilter('city', '')}
                     >
-                      <Picker.Item label="Выберите город" value="" />
-                      {cities.map((city) => (
-                        <Picker.Item key={city.id} label={city.name} value={city.name} />
-                      ))}
-                    </Picker>
-                  ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.citiesScroll}>
+                      <ThemedText style={[styles.cityPillText, filters.city === '' && styles.cityPillTextActive]}>Все</ThemedText>
+                    </TouchableOpacity>
+                    {cities.map((city) => (
                       <TouchableOpacity
-                        style={[styles.cityPill, filters.city === '' && styles.cityPillActive]}
-                        onPress={() => updateFilter('city', '')}
+                        key={city.id}
+                        style={[styles.cityPill, filters.city === city.name && styles.cityPillActive]}
+                        onPress={() => updateFilter('city', city.name)}
                       >
-                        <ThemedText style={[styles.cityPillText, filters.city === '' && styles.cityPillTextActive]}>Все</ThemedText>
+                        <ThemedText style={[styles.cityPillText, filters.city === city.name && styles.cityPillTextActive]}>{city.name}</ThemedText>
                       </TouchableOpacity>
-                      {cities.map((city) => (
-                        <TouchableOpacity
-                          key={city.id}
-                          style={[styles.cityPill, filters.city === city.name && styles.cityPillActive]}
-                          onPress={() => updateFilter('city', city.name)}
-                        >
-                          <ThemedText style={[styles.cityPillText, filters.city === city.name && styles.cityPillTextActive]}>{city.name}</ThemedText>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
+                    ))}
+                  </ScrollView>
                 </View>
               </View>
 
