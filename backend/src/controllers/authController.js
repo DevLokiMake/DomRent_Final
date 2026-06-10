@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 
 const prisma = new PrismaClient();
 
@@ -155,6 +157,64 @@ export const updateMe = async (req, res) => {
   } catch (error) {
     console.error('updateMe error:', error);
     res.status(500).json({ error: 'Ошибка обновления профиля' });
+  }
+};
+
+// In-memory store: token → { userId, expiresAt }
+const resetTokens = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of resetTokens) if (v.expiresAt < now) resetTokens.delete(k);
+}, 10 * 60 * 1000);
+
+// POST /api/auth/forgot-password  { email }
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Укажите email' });
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Не раскрываем, существует ли email
+    if (!user) return res.json({ message: 'Если аккаунт существует, ссылка отправлена' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    resetTokens.set(token, { userId: user.id, expiresAt: Date.now() + 60 * 60 * 1000 });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+    await sendPasswordResetEmail(email, resetLink);
+
+    res.json({ message: 'Если аккаунт существует, ссылка отправлена' });
+  } catch (error) {
+    console.error('forgotPassword error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+};
+
+// POST /api/auth/reset-password  { token, password }
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'token и password обязательны' });
+    if (password.length < 6) return res.status(400).json({ error: 'Пароль минимум 6 символов' });
+
+    const entry = resetTokens.get(token);
+    if (!entry || entry.expiresAt < Date.now()) {
+      resetTokens.delete(token);
+      return res.status(400).json({ error: 'Ссылка недействительна или истекла' });
+    }
+
+    resetTokens.delete(token);
+
+    const hashed = await bcrypt.hash(password, 10);
+    await prisma.user.update({ where: { id: entry.userId }, data: { password: hashed } });
+
+    res.json({ message: 'Пароль успешно изменён' });
+  } catch (error) {
+    console.error('resetPassword error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 };
 

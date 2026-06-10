@@ -21,7 +21,8 @@ enum ContractType {
 }
 
 enum BookingStatus {
-  UPCOMING    // Предстоящее
+  PENDING     // Ожидает подтверждения арендодателя
+  UPCOMING    // Подтверждено, ещё не началось
   ACTIVE      // Идёт прямо сейчас
   COMPLETED   // Завершено
   CANCELLED   // Отменено
@@ -109,7 +110,7 @@ model Booking {
   startDate  DateTime
   endDate    DateTime
   totalPrice Float
-  status     BookingStatus @default(UPCOMING)
+  status     BookingStatus @default(PENDING)
   userId     Int
   propertyId Int
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)

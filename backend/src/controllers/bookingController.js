@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
  */
 const computeStatus = (startDate, endDate, currentStatus) => {
   if (currentStatus === 'CANCELLED') return 'CANCELLED';
+  if (currentStatus === 'PENDING') return 'PENDING'; // ждёт подтверждения
   const now = new Date();
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -76,7 +77,7 @@ export const createBooking = async (req, res) => {
 
     // Проверка на пересечение дат с существующими бронированиями
     const existingBookings = await prisma.booking.findMany({
-      where: { propertyId, status: { in: ['UPCOMING', 'ACTIVE'] } }
+      where: { propertyId, status: { in: ['PENDING', 'UPCOMING', 'ACTIVE'] } }
     });
 
     if (hasDateConflict(startDate, endDate, existingBookings)) {
@@ -108,10 +109,7 @@ export const createBooking = async (req, res) => {
     // Вычисление стоимости
     const totalPrice = calculateTotalPrice(startDate, endDate, property.price);
 
-    // Определяем начальный статус
-    const initialStatus = computeStatus(startDate, endDate, 'UPCOMING');
-
-    // Создание бронирования
+    // Создание бронирования — статус PENDING до подтверждения арендодателем
     const booking = await prisma.booking.create({
       data: {
         userId: req.user.id,
@@ -119,7 +117,7 @@ export const createBooking = async (req, res) => {
         startDate,
         endDate,
         totalPrice,
-        status: initialStatus
+        status: 'PENDING'
       },
       include: {
         property: {
@@ -182,12 +180,12 @@ export const createBooking = async (req, res) => {
         `${booking.user.name || booking.user.email} забронировал «${booking.property.title}»`,
         booking.id
       ),
-      // Арендатору — подтверждение
+      // Арендатору — ожидание подтверждения
       createNotification(
         req.user.id,
-        'BOOKING_CONFIRMED',
-        'Бронирование подтверждено',
-        `Ваша бронь «${booking.property.title}» успешно создана`,
+        'BOOKING_NEW',
+        'Бронирование ожидает подтверждения',
+        `Ваша заявка на «${booking.property.title}» отправлена арендодателю`,
         booking.id
       ),
     ]);
@@ -446,5 +444,88 @@ export const getOwnerBookings = async (req, res) => {
   } catch (error) {
     console.error('Get owner bookings error:', error);
     res.status(500).json({ error: 'Ошибка при получении бронирований' });
+  }
+};
+
+// ── Подтверждение бронирования арендодателем ──────────────────────────────────
+export const confirmBooking = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    if (isNaN(bookingId)) return res.status(400).json({ error: 'Некорректный ID' });
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        property: { select: { id: true, title: true, ownerId: true } },
+        user: { select: { id: true, name: true, email: true, telegramId: true } }
+      }
+    });
+
+    if (!booking) return res.status(404).json({ error: 'Бронирование не найдено' });
+    if (booking.property.ownerId !== req.user.id) return res.status(403).json({ error: 'Нет прав' });
+    if (booking.status !== 'PENDING') return res.status(400).json({ error: 'Бронирование уже обработано' });
+
+    const newStatus = computeStatus(booking.startDate, booking.endDate, 'UPCOMING');
+    await prisma.booking.update({ where: { id: bookingId }, data: { status: newStatus } });
+
+    Promise.allSettled([
+      createNotification(booking.user.id, 'BOOKING_CONFIRMED', 'Бронирование подтверждено',
+        `Арендодатель подтвердил вашу бронь «${booking.property.title}»`, bookingId),
+    ]);
+
+    // Telegram уведомление гостю
+    const { sendBookingStatusNotification } = await import('../services/telegramService.js');
+    sendBookingStatusNotification(booking.user.id, {
+      propertyTitle: booking.property.title,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      totalPrice: booking.totalPrice,
+      status: 'CONFIRMED'
+    }).catch(() => {});
+
+    res.json({ message: 'Бронирование подтверждено', status: newStatus });
+  } catch (error) {
+    console.error('confirmBooking error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+};
+
+// ── Отклонение бронирования арендодателем ────────────────────────────────────
+export const rejectBooking = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    if (isNaN(bookingId)) return res.status(400).json({ error: 'Некорректный ID' });
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        property: { select: { id: true, title: true, ownerId: true } },
+        user: { select: { id: true, name: true, email: true } }
+      }
+    });
+
+    if (!booking) return res.status(404).json({ error: 'Бронирование не найдено' });
+    if (booking.property.ownerId !== req.user.id) return res.status(403).json({ error: 'Нет прав' });
+    if (booking.status !== 'PENDING') return res.status(400).json({ error: 'Бронирование уже обработано' });
+
+    await prisma.booking.update({ where: { id: bookingId }, data: { status: 'CANCELLED' } });
+
+    Promise.allSettled([
+      createNotification(booking.user.id, 'BOOKING_CANCELLED', 'Бронирование отклонено',
+        `К сожалению, арендодатель отклонил вашу бронь «${booking.property.title}»`, bookingId),
+    ]);
+
+    const { sendBookingStatusNotification } = await import('../services/telegramService.js');
+    sendBookingStatusNotification(booking.user.id, {
+      propertyTitle: booking.property.title,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      status: 'CANCELLED'
+    }).catch(() => {});
+
+    res.json({ message: 'Бронирование отклонено' });
+  } catch (error) {
+    console.error('rejectBooking error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 };

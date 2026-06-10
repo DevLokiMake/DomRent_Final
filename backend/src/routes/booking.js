@@ -4,7 +4,9 @@ import {
   getUserBookings,
   getOwnerBookings,
   cancelBooking,
-  getBookingById
+  getBookingById,
+  confirmBooking,
+  rejectBooking,
 } from '../controllers/bookingController.js';
 import { authenticateToken } from '../middlewares/auth.js';
 import { validate, bookingSchema } from '../middlewares/validate.js';
@@ -41,5 +43,11 @@ router.get('/:id', authenticateToken, getBookingById);
  * Отмена бронирования (требует аутентификацию и принадлежность бронирования)
  */
 router.delete('/:id', authenticateToken, cancelBooking);
+
+// PATCH /api/bookings/:id/confirm — арендодатель подтверждает бронирование
+router.patch('/:id/confirm', authenticateToken, confirmBooking);
+
+// PATCH /api/bookings/:id/reject — арендодатель отклоняет бронирование
+router.patch('/:id/reject', authenticateToken, rejectBooking);
 
 export default router;

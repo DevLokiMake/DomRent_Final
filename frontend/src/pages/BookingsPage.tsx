@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
   Loader, AlertCircle, Trash2, Phone, Mail,
   MapPin, Calendar, MessageSquare, Star, Home,
-  ChevronLeft, ChevronRight, Lock, Unlock,
+  ChevronLeft, ChevronRight, Lock, Unlock, Check, X,
 } from "lucide-react";
 import axiosInstance from "../api/axios";
 import { useAuth } from "../context/AuthContext";
-type BookingStatus = "UPCOMING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+type BookingStatus = "PENDING" | "UPCOMING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 interface BookingWithProperty {
   id: number;
@@ -52,10 +52,11 @@ const getCityName = (city?: string | { id: number; name: string }): string => {
 };
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; bg: string; dot: string }> = {
-  UPCOMING:  { label: "Предстоящая", color: "text-blue-700",  bg: "bg-blue-50 border-blue-200",   dot: "bg-blue-500" },
-  ACTIVE:    { label: "Активная",    color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", dot: "bg-emerald-500" },
-  COMPLETED: { label: "Завершена",   color: "text-gray-600",  bg: "bg-gray-100 border-gray-200",   dot: "bg-gray-400" },
-  CANCELLED: { label: "Отменена",    color: "text-red-700",   bg: "bg-red-50 border-red-200",     dot: "bg-red-500" },
+  PENDING:   { label: "Ожидает подтверждения", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800", dot: "bg-amber-500" },
+  UPCOMING:  { label: "Предстоящая", color: "text-blue-700 dark:text-blue-400",  bg: "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800",   dot: "bg-blue-500" },
+  ACTIVE:    { label: "Активная",    color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800", dot: "bg-emerald-500" },
+  COMPLETED: { label: "Завершена",   color: "text-gray-600 dark:text-gray-400",  bg: "bg-gray-100 border-gray-200 dark:bg-gray-800 dark:border-gray-700",   dot: "bg-gray-400" },
+  CANCELLED: { label: "Отменена",    color: "text-red-700 dark:text-red-400",   bg: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800",     dot: "bg-red-500" },
 };
 
 const STATUS_FILTERS: { value: BookingStatus | "ALL"; label: string }[] = [
@@ -88,6 +89,25 @@ const BookingsPage = () => {
   const [ownerBookingsError, setOwnerBookingsError] = useState<string | null>(null);
 
   const [cancelingId, setCancelingId] = useState<number | null>(null);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+
+  const handleConfirmBooking = async (bookingId: number, action: "confirm" | "reject") => {
+    const msg = action === "confirm" ? "Подтвердить бронирование?" : "Отклонить бронирование?";
+    if (!window.confirm(msg)) return;
+    try {
+      setConfirmingId(bookingId);
+      await axiosInstance.patch(`/bookings/${bookingId}/${action}`);
+      setOwnerBookings(prev => prev.map(b =>
+        b.id === bookingId
+          ? { ...b, status: action === "confirm" ? "UPCOMING" : "CANCELLED" }
+          : b
+      ));
+    } catch (err: unknown) {
+      alert((err as any)?.response?.data?.error || "Ошибка");
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   // ── Occupancy calendar state ──────────────────────────────────────────────
   const [myProperties, setMyProperties] = useState<MyProperty[]>([]);
@@ -394,6 +414,31 @@ const BookingsPage = () => {
                 Чат
               </button>
             </div>
+
+            {booking.status === "PENDING" && (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => handleConfirmBooking(booking.id, "confirm")}
+                  disabled={confirmingId === booking.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl transition border border-emerald-200 disabled:opacity-50"
+                >
+                  {confirmingId === booking.id ? (
+                    <Loader className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  Подтвердить
+                </button>
+                <button
+                  onClick={() => handleConfirmBooking(booking.id, "reject")}
+                  disabled={confirmingId === booking.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-xl transition border border-red-200 disabled:opacity-50"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Отклонить
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
