@@ -160,11 +160,11 @@ export const updateMe = async (req, res) => {
   }
 };
 
-// In-memory store: token → { userId, expiresAt }
-const resetTokens = new Map();
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of resetTokens) if (v.expiresAt < now) resetTokens.delete(k);
+// Очищаем просроченные токены раз в 10 минут
+setInterval(async () => {
+  try {
+    await prisma.passwordResetToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+  } catch (_) {}
 }, 10 * 60 * 1000);
 
 // POST /api/auth/forgot-password  { email }
@@ -179,7 +179,9 @@ export const forgotPassword = async (req, res) => {
     if (!user) return res.json({ message: 'Если аккаунт существует, ссылка отправлена' });
 
     const token = crypto.randomBytes(32).toString('hex');
-    resetTokens.set(token, { userId: user.id, expiresAt: Date.now() + 60 * 60 * 1000 });
+    await prisma.passwordResetToken.create({
+      data: { token, userId: user.id, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
@@ -200,13 +202,13 @@ export const resetPassword = async (req, res) => {
     if (!token || !password) return res.status(400).json({ error: 'token и password обязательны' });
     if (password.length < 6) return res.status(400).json({ error: 'Пароль минимум 6 символов' });
 
-    const entry = resetTokens.get(token);
-    if (!entry || entry.expiresAt < Date.now()) {
-      resetTokens.delete(token);
+    const entry = await prisma.passwordResetToken.findUnique({ where: { token } });
+    if (!entry || entry.expiresAt < new Date()) {
+      if (entry) await prisma.passwordResetToken.delete({ where: { token } });
       return res.status(400).json({ error: 'Ссылка недействительна или истекла' });
     }
 
-    resetTokens.delete(token);
+    await prisma.passwordResetToken.delete({ where: { token } });
 
     const hashed = await bcrypt.hash(password, 10);
     await prisma.user.update({ where: { id: entry.userId }, data: { password: hashed } });

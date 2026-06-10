@@ -57,9 +57,10 @@ model User {
   favorites     Favorite[]
   reviews       Review[]       @relation("ReviewAuthor")
   sentMessages  Message[]      @relation("MessageSender")
-  notifications Notification[]
-  auditLogs     AuditLog[]     @relation("AuditAdmin")
-  createdAt     DateTime       @default(now())
+  notifications       Notification[]
+  auditLogs           AuditLog[]          @relation("AuditAdmin")
+  passwordResetTokens PasswordResetToken[]
+  createdAt           DateTime            @default(now())
 }
 
 model Property {
@@ -209,4 +210,13 @@ enum NotificationType {
   REVIEW_NEW
   PROPERTY_APPROVED
   PROPERTY_REJECTED
+}
+
+model PasswordResetToken {
+  token     String   @id
+  userId    Int
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

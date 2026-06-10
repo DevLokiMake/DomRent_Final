@@ -208,7 +208,12 @@ export const createBooking = async (req, res) => {
  */
 export const getUserBookings = async (req, res) => {
   try {
-    const { status } = req.query; // ?status=UPCOMING|ACTIVE|COMPLETED|CANCELLED
+    const { status } = req.query;
+
+    const VALID_STATUSES = ['PENDING', 'UPCOMING', 'ACTIVE', 'COMPLETED', 'CANCELLED'];
+    if (status && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Недопустимый статус' });
+    }
 
     const where = { userId: req.user.id };
     if (status) where.status = status;
