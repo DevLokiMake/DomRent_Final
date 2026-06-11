@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 /**
  * Определяем baseURL в зависимости от платформы и окружения
  *
- * Android эмулятор:   http://10.0.2.2:5000/api
+ * Android эмулятор:   http://10.0.2.2:3000/api
  * iOS эмулятор:       http://<IP адрес компьютера>:5000/api
  * Реальное устройство: http://<IP адрес компьютера>:5000/api
  *
@@ -21,13 +21,13 @@ const getBaseURL = (): string => {
   if (Platform.OS === 'android') {
     // Для Android эмулятора используем специальный адрес 10.0.2.2
     // это резервированный адрес, который эмулятор использует для доступа к хосту
-    return 'http://10.0.2.2:5000/api';
+    return 'http://10.0.2.2:3000/api';
   }
 
   // Для iOS эмулятора и реальных устройств
   // ВАЖНО: Замените localhost на IP адрес вашего компьютера!
   // Пример: return 'http://192.168.1.100:5000/api';
-  return 'http://localhost:5000/api';
+  return 'http://localhost:3000/api';
 };
 
 export const axiosInstance = axios.create({

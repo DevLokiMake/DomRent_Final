@@ -42,6 +42,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#f43f5e"
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "DomRent использует геолокацию для показа жилья рядом с вами."
