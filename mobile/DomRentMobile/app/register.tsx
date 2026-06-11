@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { signUp, isLoading } = useAuth();
+  const { signup, isLoading } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,7 +41,7 @@ export default function RegisterScreen() {
     }
 
     try {
-      await signUp(email, password, name, role);
+      await signup(email, password, name, role);
       // После успешной регистрации переходим на главный экран
       router.replace('/(tabs)');
     } catch (error) {
@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   roleButtonActive: {
-    backgroundColor: '#0a84ff',
-    borderColor: '#0a84ff',
+    backgroundColor: '#f43f5e',
+    borderColor: '#f43f5e',
   },
   roleButtonText: {
     fontSize: 14,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButton: {
-    backgroundColor: '#0a84ff',
+    backgroundColor: '#f43f5e',
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -287,6 +287,6 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0a84ff',
+    color: '#f43f5e',
   },
 });

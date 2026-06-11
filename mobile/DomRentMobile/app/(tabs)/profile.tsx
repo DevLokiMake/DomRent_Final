@@ -56,7 +56,7 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <User size={48} color="#0a84ff" />
+            <User size={48} color="#f43f5e" />
           </View>
           <ThemedText type="title" style={styles.title}>
             Мой профиль
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
           {/* Name */}
           <View style={styles.infoItem}>
             <View style={styles.infoItemLabel}>
-              <User size={20} color="#0a84ff" />
+              <User size={20} color="#f43f5e" />
               <ThemedText style={styles.infoLabel}>Имя</ThemedText>
             </View>
             <ThemedText style={styles.infoValue}>{user?.name || 'Не указано'}</ThemedText>
@@ -79,7 +79,7 @@ export default function ProfileScreen() {
           {/* Email */}
           <View style={styles.infoItem}>
             <View style={styles.infoItemLabel}>
-              <Mail size={20} color="#0a84ff" />
+              <Mail size={20} color="#f43f5e" />
               <ThemedText style={styles.infoLabel}>Email</ThemedText>
             </View>
             <ThemedText style={styles.infoValue}>{user?.email}</ThemedText>
@@ -88,7 +88,7 @@ export default function ProfileScreen() {
           {/* Role */}
           <View style={styles.infoItem}>
             <View style={styles.infoItemLabel}>
-              <User size={20} color="#0a84ff" />
+              <User size={20} color="#f43f5e" />
               <ThemedText style={styles.infoLabel}>Роль</ThemedText>
             </View>
             <ThemedText style={styles.infoValue}>
@@ -99,7 +99,7 @@ export default function ProfileScreen() {
           {/* Telegram ID */}
           <View style={styles.infoItem}>
             <View style={styles.infoItemLabel}>
-              <Smartphone size={20} color="#0a84ff" />
+              <Smartphone size={20} color="#f43f5e" />
               <ThemedText style={styles.infoLabel}>Telegram ID</ThemedText>
             </View>
             <ThemedText style={styles.infoValue}>
@@ -111,16 +111,16 @@ export default function ProfileScreen() {
         {/* Quick nav */}
         <View style={styles.quickNav}>
           <TouchableOpacity style={styles.quickNavItem} onPress={() => router.push('/(tabs)/favorites')}>
-            <Heart size={22} color="#007AFF" />
+            <Heart size={22} color="#f43f5e" />
             <ThemedText style={styles.quickNavText}>Избранное</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickNavItem} onPress={() => router.push('/(tabs)/bookings')}>
-            <Calendar size={22} color="#007AFF" />
+            <Calendar size={22} color="#f43f5e" />
             <ThemedText style={styles.quickNavText}>Бронирования</ThemedText>
           </TouchableOpacity>
           {user?.role === 'LANDLORD' && (
             <TouchableOpacity style={styles.quickNavItem} onPress={() => router.push('/create-property')}>
-              <Plus size={22} color="#007AFF" />
+              <Plus size={22} color="#f43f5e" />
               <ThemedText style={styles.quickNavText}>Добавить</ThemedText>
             </TouchableOpacity>
           )}
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0a84ff',
+    color: '#f43f5e',
   },
   infoValue: {
     fontSize: 16,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButton: {
-    backgroundColor: '#0a84ff',
+    backgroundColor: '#f43f5e',
   },
   dangerButton: {
     backgroundColor: '#ff3b30',
@@ -268,6 +268,6 @@ const styles = StyleSheet.create({
   quickNavText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#f43f5e',
   },
 });

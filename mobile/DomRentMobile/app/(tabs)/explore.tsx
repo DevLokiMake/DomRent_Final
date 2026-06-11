@@ -300,7 +300,7 @@ export default function ExploreScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#f43f5e" />
           <ThemedText style={styles.loadingText}>Загрузка объектов...</ThemedText>
         </View>
       </ThemedView>
@@ -363,7 +363,7 @@ export default function ExploreScreen() {
             <View style={styles.modalHeader}>
               <ThemedText style={styles.modalTitle}>Фильтры</ThemedText>
               <TouchableOpacity onPress={() => setShowFilters(false)}>
-                <X size={24} color="#007AFF" />
+                <X size={24} color="#f43f5e" />
               </TouchableOpacity>
             </View>
 
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#f43f5e',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#f43f5e',
   },
   priceSubtext: {
     fontSize: 12,
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#f43f5e',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -747,8 +747,8 @@ const styles = StyleSheet.create({
     minWidth: '30%',
   },
   typeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#f43f5e',
+    borderColor: '#f43f5e',
   },
   typeButtonText: {
     fontSize: 12,
@@ -784,8 +784,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   cityPillActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#f43f5e',
+    borderColor: '#f43f5e',
   },
   cityPillText: {
     fontSize: 13,
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   applyButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#f43f5e',
   },
   applyButtonText: {
     fontSize: 14,

@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +27,7 @@ export default function LoginScreen() {
     }
 
     try {
-      await signIn(email, password);
+      await login(email, password);
       // После успешного входа переходим на главный экран
       router.replace('/(tabs)');
     } catch (error) {
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButton: {
-    backgroundColor: '#0a84ff',
+    backgroundColor: '#f43f5e',
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -180,6 +180,6 @@ const styles = StyleSheet.create({
   registerLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0a84ff',
+    color: '#f43f5e',
   },
 });
