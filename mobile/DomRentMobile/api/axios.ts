@@ -24,10 +24,8 @@ const getBaseURL = (): string => {
     return 'http://10.0.2.2:3000/api';
   }
 
-  // Для iOS эмулятора и реальных устройств
-  // ВАЖНО: Замените localhost на IP адрес вашего компьютера!
-  // Пример: return 'http://192.168.1.100:5000/api';
-  return 'http://localhost:3000/api';
+  // Для реального устройства — IP компьютера в локальной сети
+  return 'http://10.64.101.164:3000/api';
 };
 
 export const axiosInstance = axios.create({

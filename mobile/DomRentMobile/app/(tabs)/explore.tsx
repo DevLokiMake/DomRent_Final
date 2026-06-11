@@ -10,6 +10,7 @@ import {
   Dimensions,
   Modal,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, Filter, X, Heart } from 'lucide-react-native';
