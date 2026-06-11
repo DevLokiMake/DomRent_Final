@@ -79,7 +79,7 @@ export const getLandlordStatistics = async (req, res) => {
     const bestProperty = [...propertyStats].sort((a, b) => b.revenue - a.revenue)[0] || null;
 
     // Топ город
-    const cityRevenue: Record<string, number> = {};
+    const cityRevenue = {};
     propertyStats.forEach(p => {
       cityRevenue[p.city] = (cityRevenue[p.city] || 0) + p.revenue;
     });
@@ -100,7 +100,7 @@ export const getLandlordStatistics = async (req, res) => {
       select: { createdAt: true, totalPrice: true },
     });
 
-    const monthlyMap: Record<string, { bookings: number; revenue: number }> = {};
+    const monthlyMap = {};
     allBookings.forEach(b => {
       const key = b.createdAt.toISOString().slice(0, 7); // YYYY-MM
       if (!monthlyMap[key]) monthlyMap[key] = { bookings: 0, revenue: 0 };
