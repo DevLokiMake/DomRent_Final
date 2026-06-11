@@ -74,6 +74,17 @@ export const updateProfileSchema = z.object({
   phone: z.string().optional()
 });
 
+// Запрос сброса пароля
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Введите корректный email')
+});
+
+// Сброс пароля
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token обязателен'),
+  password: z.string().min(6, 'Пароль минимум 6 символов')
+});
+
 /**
  * Middleware фабрика для валидации запроса
  * @param {ZodSchema} schema - Zod schema для валидации

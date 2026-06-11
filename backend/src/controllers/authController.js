@@ -75,6 +75,11 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: 'Неверные учетные данные' });
     }
 
+    // Проверка: заблокирован ли аккаунт
+    if (user.isBanned) {
+      return res.status(403).json({ error: 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку.' });
+    }
+
     // Проверка пароля
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -171,7 +176,6 @@ setInterval(async () => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Укажите email' });
 
     const user = await prisma.user.findUnique({ where: { email } });
 
@@ -199,8 +203,6 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    if (!token || !password) return res.status(400).json({ error: 'token и password обязательны' });
-    if (password.length < 6) return res.status(400).json({ error: 'Пароль минимум 6 символов' });
 
     const entry = await prisma.passwordResetToken.findUnique({ where: { token } });
     if (!entry || entry.expiresAt < new Date()) {
