@@ -72,6 +72,7 @@ const HomePage = () => {
   }, []);
 
   const fetchFavorites = useCallback(async () => {
+    if (!localStorage.getItem("token")) return;
     try {
       const res = await axiosInstance.get("/favorites");
       setFavorites(new Set<number>((res.data.favorites || []).map((f: any) => f.propertyId)));
