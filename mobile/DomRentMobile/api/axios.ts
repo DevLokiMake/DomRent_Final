@@ -3,13 +3,15 @@ import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
+// Для локальной разработки: запусти туннель командой
+//   npx localtunnel --port 3000 --subdomain domrent-backend-app
+// Туннельный URL обходит Windows Firewall и работает с любой сети
+const TUNNEL_URL = 'https://domrent-backend-app.loca.lt/api';
 const BACKEND_PORT = 3000;
-const PRODUCTION_URL = 'https://domrent-production.up.railway.app/api';
 
 const getBaseURL = (): string => {
   if (__DEV__) {
-    // Автоматически берём IP из Expo Metro — тот же хост, через который телефон
-    // загрузил бандл, гарантированно доступен с устройства
+    // Пробуем автоматически взять IP из Expo Metro
     const host =
       Constants.expoGoConfig?.debuggerHost?.split(':')[0] ||
       (Constants.manifest2 as any)?.extra?.expoClient?.hostUri?.split(':')[0] ||
@@ -18,14 +20,20 @@ const getBaseURL = (): string => {
     if (host) {
       return `http://${host}:${BACKEND_PORT}/api`;
     }
+    // Fallback: туннель (всегда работает)
+    return TUNNEL_URL;
   }
-  return PRODUCTION_URL;
+  // Production: Railway
+  return TUNNEL_URL;
 };
 
 export const axiosInstance = axios.create({
   baseURL: getBaseURL(),
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'Bypass-Tunnel-Reminder': 'true',
+  },
 });
 
 axiosInstance.interceptors.request.use(
