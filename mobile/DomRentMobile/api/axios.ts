@@ -2,7 +2,8 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://chatty-fox-43.loca.lt/api';
+// Запусти `node start-tunnel.js` из корня проекта — он обновит этот URL автоматически
+const BASE_URL = 'https://machinery-oils-belle-floating.trycloudflare.com/api';
 
 export const axiosInstance = axios.create({
   baseURL: BASE_URL,

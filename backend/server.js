@@ -23,6 +23,7 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
+app.set('trust proxy', 1);
 app.use(helmet());
 
 // Rate limiting: auth endpoints — 10 попыток / 15 мин
