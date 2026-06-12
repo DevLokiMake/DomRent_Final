@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://gentle-parrot-48.loca.lt/api';
+const BASE_URL = 'https://chatty-fox-43.loca.lt/api';
 
 export const axiosInstance = axios.create({
   baseURL: BASE_URL,
