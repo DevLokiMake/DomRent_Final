@@ -93,15 +93,17 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-const start = async () => {
-  try {
-    await prisma.$connect();
-    console.log('Connected to database');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    process.exit(1);
-  }
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});
+
+const start = () => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    prisma.$connect()
+      .then(() => console.log('Connected to database'))
+      .catch((e) => console.error('DB connect warning:', e.message));
+  });
 };
 
 start();
