@@ -8,8 +8,8 @@ import { z } from 'zod';
 export const registerSchema = z.object({
   email: z.string().email('Email должен быть валидным'),
   password: z.string().min(6, 'Пароль должен быть минимум 6 символов'),
-  name: z.string().min(1, 'Имя обязательно').optional(),
-  phone: z.string().optional(),
+  name: z.string().transform(v => v.trim() || undefined).optional(),
+  phone: z.string().transform(v => v.trim() || undefined).optional(),
   // Разрешаем только USER/LANDLORD при регистрации — ADMIN назначается только через admin-панель
   role: z.enum(['USER', 'LANDLORD']).optional().default('USER')
 });
