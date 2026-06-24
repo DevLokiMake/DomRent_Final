@@ -96,13 +96,15 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={isDark ? 'Светлый режим' : 'Тёмный режим'}
+      className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
     >
-      {isDark
-        ? <Sun className="w-5 h-5 text-amber-400" />
-        : <Moon className="w-5 h-5 text-gray-600" />
-      }
+      <Sun className={`w-3.5 h-3.5 transition-colors ${!isDark ? 'text-amber-500' : 'text-gray-400'}`} />
+      {/* pill */}
+      <div className="relative w-8 h-4 rounded-full bg-gray-200 dark:bg-brand-500 transition-colors">
+        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 ${isDark ? 'translate-x-4' : 'translate-x-0.5'}`} />
+      </div>
+      <Moon className={`w-3.5 h-3.5 transition-colors ${isDark ? 'text-indigo-400' : 'text-gray-400'}`} />
     </button>
   );
 };
