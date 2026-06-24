@@ -2,8 +2,9 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Запусти `node start-tunnel.js` из корня проекта — он обновит этот URL автоматически
-const BASE_URL = 'https://machinery-oils-belle-floating.trycloudflare.com/api';
+// URL обновляется автоматически скриптом `node start-tunnel.js` из корня проекта.
+// Приоритет: EXPO_PUBLIC_API_URL (из .env) → hardcoded tunnel URL
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://machinery-oils-belle-floating.trycloudflare.com/api';
 
 export const axiosInstance = axios.create({
   baseURL: BASE_URL,

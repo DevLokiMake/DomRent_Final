@@ -42,8 +42,14 @@ export const authenticateToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
-    res.status(401).json({ error: 'Недействительный токен.' });
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Токен истёк. Войдите заново.' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Недействительный токен.' });
+    }
+    console.error('Auth middleware unexpected error:', error.message);
+    res.status(401).json({ error: 'Ошибка аутентификации.' });
   }
 };
 
