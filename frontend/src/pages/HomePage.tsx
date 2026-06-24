@@ -110,11 +110,11 @@ const HomePage = () => {
 
   if (error && properties.length === 0) return (
     <div className="flex justify-center items-center min-h-[60vh]">
-      <div className="text-center bg-white p-8 rounded-3xl shadow-card max-w-md">
+      <div className="text-center bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-card max-w-md border border-gray-100 dark:border-gray-800">
         <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-        <p className="text-gray-700 font-semibold mb-2">Не удалось загрузить объявления</p>
-        <p className="text-gray-400 text-sm mb-6">{error}</p>
-        <button onClick={() => fetchProperties()} className="px-6 py-2.5 bg-gray-900 text-white rounded-2xl hover:bg-gray-700 transition-colors text-sm font-semibold">
+        <p className="text-gray-700 dark:text-gray-200 font-semibold mb-2">Не удалось загрузить объявления</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mb-6">{error}</p>
+        <button onClick={() => fetchProperties()} className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors text-sm font-semibold">
           Попробовать снова
         </button>
       </div>
@@ -203,8 +203,8 @@ const HomePage = () => {
                 }}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                   filters.type === t
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
+                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
                 }`}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -216,8 +216,8 @@ const HomePage = () => {
             onClick={() => setShowFilters(o => !o)}
             className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-2xl border text-sm font-semibold transition-all ${
               hasActive
-                ? "bg-gray-900 text-white border-gray-900"
-                : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
+                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" />
@@ -230,12 +230,12 @@ const HomePage = () => {
 
         {/* Expanded filters */}
         {showFilters && (
-          <div className="bg-white rounded-3xl shadow-card border border-gray-100 p-6 mb-6 animate-slide-up">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-card border border-gray-100 dark:border-gray-800 p-6 mb-6 animate-slide-up">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-5">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Тип жилья</label>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Тип жилья</label>
                 <select value={filters.type} onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900">
+                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400">
                   <option value="">Все</option>
                   <option value="квартира">Квартира</option>
                   <option value="дом">Дом</option>
@@ -243,29 +243,29 @@ const HomePage = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">
                   <BedDouble className="inline w-3 h-3 mr-1" />Комнат
                 </label>
                 <select value={filters.rooms} onChange={e => setFilters(p => ({ ...p, rooms: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900">
+                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400">
                   <option value="">Любое</option>
                   {[1,2,3,4,5].map(n => <option key={n} value={String(n)}>{n}{n===5?"+":""} комн.</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Цена от (₸)</label>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Цена от (₸)</label>
                 <input type="number" placeholder="0" value={filters.minPrice}
                   onChange={e => setFilters(p => ({ ...p, minPrice: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900" />
+                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Цена до (₸)</label>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Цена до (₸)</label>
                 <input type="number" placeholder="∞" value={filters.maxPrice}
                   onChange={e => setFilters(p => ({ ...p, maxPrice: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900" />
+                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
               </div>
               <div className="flex flex-col gap-2 justify-end">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Удобства</label>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Удобства</label>
                 <div className="flex flex-wrap gap-1.5">
                   {([
                     { key: "hasWifi", icon: <Wifi className="w-3 h-3" />, label: "Wi-Fi" },
@@ -275,7 +275,9 @@ const HomePage = () => {
                     <button key={key} type="button"
                       onClick={() => setFilters(p => ({ ...p, [key]: !p[key] }))}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        filters[key] ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                        filters[key]
+                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
+                          : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
                       }`}
                     >
                       {icon}{label}
@@ -284,14 +286,14 @@ const HomePage = () => {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
+            <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
               <button onClick={handleApply} disabled={loading}
-                className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-700 text-white font-semibold rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-semibold rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {loading ? <Loader className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 Применить
               </button>
               <button onClick={handleReset}
-                className="px-5 py-2.5 border border-gray-200 hover:border-gray-400 text-gray-600 font-semibold rounded-xl text-sm transition-colors flex items-center gap-2">
+                className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 text-gray-600 dark:text-gray-300 font-semibold rounded-xl text-sm transition-colors flex items-center gap-2">
                 <X className="w-4 h-4" />Сбросить
               </button>
             </div>
@@ -300,9 +302,9 @@ const HomePage = () => {
 
         {/* Results count */}
         {!loading && (
-          <p className="text-sm text-gray-500 mb-5">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
             {properties.length > 0
-              ? <><span className="font-semibold text-gray-900">{properties.length}</span> объявлений найдено</>
+              ? <><span className="font-semibold text-gray-900 dark:text-white">{properties.length}</span> объявлений найдено</>
               : "Объявлений не найдено"}
           </p>
         )}
@@ -319,13 +321,13 @@ const HomePage = () => {
 
         {/* Empty */}
         {!loading && properties.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-3xl shadow-card">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MapPin className="w-8 h-8 text-gray-300" />
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl shadow-card border border-gray-100 dark:border-gray-800">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Ничего не найдено</h3>
-            <p className="text-gray-400 text-sm mb-6">Попробуйте изменить параметры поиска</p>
-            <button onClick={handleReset} className="px-6 py-2.5 bg-gray-900 text-white rounded-2xl text-sm font-semibold hover:bg-gray-700 transition-colors">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Ничего не найдено</h3>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mb-6">Попробуйте изменить параметры поиска</p>
+            <button onClick={handleReset} className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-sm font-semibold hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
               Сбросить фильтры
             </button>
           </div>
@@ -422,10 +424,10 @@ const HomePage = () => {
               <Link
                 key={property.id}
                 to={`/property/${property.id}`}
-                className="group block bg-white rounded-3xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden"
+                className="group block bg-white dark:bg-gray-900 rounded-3xl shadow-card hover:shadow-card-hover border border-transparent dark:border-gray-800 transition-all duration-300 overflow-hidden"
               >
                 {/* Image */}
-                <div className="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                <div className="relative overflow-hidden aspect-[4/3] bg-gray-100 dark:bg-gray-800">
                   {(property.coverImage || property.images?.[0]) ? (
                     <img
                       src={property.coverImage || property.images[0]}
@@ -435,14 +437,14 @@ const HomePage = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <MapPin className="w-10 h-10 text-gray-200" />
+                      <MapPin className="w-10 h-10 text-gray-200 dark:text-gray-700" />
                     </div>
                   )}
 
                   {/* Favorite */}
                   <button
                     onClick={e => handleToggleFavorite(property.id, e)}
-                    className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+                    className="absolute top-3 right-3 w-9 h-9 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
                   >
                     <Heart
                       className={`transition-colors ${favorites.has(property.id) ? "fill-red-500 text-red-500" : "text-gray-400"}`}
@@ -451,7 +453,7 @@ const HomePage = () => {
                   </button>
 
                   {/* Type badge */}
-                  <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-bold text-gray-700 capitalize">
+                  <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full text-xs font-bold text-gray-700 dark:text-gray-200 capitalize">
                     {property.type}
                   </div>
 
@@ -465,12 +467,10 @@ const HomePage = () => {
 
                 {/* Content */}
                 <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900 text-sm line-clamp-1 flex-1">{property.title}</h3>
-                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 mb-1">{property.title}</h3>
 
-                  <div className="flex items-center gap-1 text-gray-500 text-xs mb-2">
-                    <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs mb-2">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
                     <span className="line-clamp-1">{getCityName(property)}</span>
                     {property.rooms && (
                       <span className="ml-2 flex items-center gap-0.5">
@@ -483,12 +483,12 @@ const HomePage = () => {
                   {(property.hasWifi || property.hasParking || property.petsAllowed) && (
                     <div className="flex gap-2 mb-2">
                       {property.hasWifi && <Wifi className="w-3.5 h-3.5 text-blue-400" />}
-                      {property.hasParking && <Car className="w-3.5 h-3.5 text-gray-400" />}
+                      {property.hasParking && <Car className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
                       {property.petsAllowed && <PawPrint className="w-3.5 h-3.5 text-green-400" />}
                     </div>
                   )}
 
-                  <p className="font-bold text-gray-900 text-base mt-auto">{getPriceText(property)}</p>
+                  <p className="font-bold text-gray-900 dark:text-white text-base">{getPriceText(property)}</p>
                 </div>
               </Link>
             ))}
