@@ -21,6 +21,7 @@ import reportRoutes from './src/routes/report.js';
 dotenv.config();
 
 console.log(`[boot] PORT=${process.env.PORT} NODE_ENV=${process.env.NODE_ENV} FRONTEND_URL=${process.env.FRONTEND_URL}`);
+console.log(`[boot] DATABASE_URL set: ${!!process.env.DATABASE_URL} JWT_SECRET set: ${!!process.env.JWT_SECRET}`);
 
 const app = express();
 const prisma = new PrismaClient();
@@ -72,6 +73,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check (no auth, no DB)
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
@@ -96,7 +100,12 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled rejection:', reason);
+  console.error('[crash] Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[crash] Uncaught exception:', err.message, err.stack);
+  process.exit(1);
 });
 
 const start = () => {
