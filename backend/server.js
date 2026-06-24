@@ -20,6 +20,8 @@ import reportRoutes from './src/routes/report.js';
 
 dotenv.config();
 
+console.log(`[boot] PORT=${process.env.PORT} NODE_ENV=${process.env.NODE_ENV} FRONTEND_URL=${process.env.FRONTEND_URL}`);
+
 const app = express();
 const prisma = new PrismaClient();
 
