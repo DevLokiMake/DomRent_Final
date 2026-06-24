@@ -77,8 +77,8 @@ const LoginPage = () => {
           <p className="text-gray-500 dark:text-gray-400 mb-8">Войдите в свой аккаунт</p>
 
           {error && (
-            <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-2xl">
-              <p className="text-red-700 text-sm font-medium">{error}</p>
+            <div className="mb-5 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl">
+              <p className="text-red-700 dark:text-red-400 text-sm font-medium">{error}</p>
             </div>
           )}
 
@@ -125,15 +125,15 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-gray-900 hover:bg-gray-700 text-white font-semibold rounded-2xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+              className="w-full py-3.5 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-semibold rounded-2xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
             >
               {loading ? <><Loader className="w-4 h-4 animate-spin" />Вход...</> : "Войти"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Нет аккаунта?{' '}
-            <Link to="/register" className="font-semibold text-gray-900 hover:text-brand-600 transition-colors">
+            <Link to="/register" className="font-semibold text-gray-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
               Зарегистрироваться
             </Link>
           </p>
