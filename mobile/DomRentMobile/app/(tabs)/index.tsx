@@ -17,6 +17,8 @@ import { ThemedText } from '@/components/themed-text';
 import { axiosInstance } from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { Property } from '@/types';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 const BRAND = '#f43f5e';
 
@@ -34,12 +36,14 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ item, isFavorited, onPress, onToggleFavorite }) => {
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const price = item.price.toLocaleString('ru-RU', { minimumFractionDigits: 0 });
   const priceLabel = item.contractType === 'RENT' ? `${price} ₸/сут` : `${price} ₸`;
   const badge = item.contractType === 'RENT' ? 'Аренда' : 'Продажа';
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.card}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[styles.card, { backgroundColor: C.card }]}>
       <View style={styles.imageWrap}>
         <Image
           source={{ uri: item.coverImage || item.images?.[0] || 'https://placehold.co/400x240/f1f5f9/94a3b8?text=No+image' }}
@@ -71,6 +75,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ item, isFavorited, onPress,
 export default function HomeScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const [properties, setProperties] = useState<Property[]>([]);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -140,7 +146,7 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { borderBottomColor: C.separator }]}>
         <ThemedText style={styles.headerTitle}>DomRent</ThemedText>
         <ThemedText style={styles.headerSub}>Найдите своё жильё</ThemedText>
       </View>

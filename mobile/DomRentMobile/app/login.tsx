@@ -12,10 +12,14 @@ import { useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isLoading } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,7 +61,7 @@ export default function LoginScreen() {
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Email</ThemedText>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }]}
               placeholder="your@email.com"
               placeholderTextColor="#999"
               keyboardType="email-address"
@@ -72,7 +76,7 @@ export default function LoginScreen() {
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Пароль</ThemedText>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }]}
               placeholder="Минимум 6 символов"
               placeholderTextColor="#999"
               secureTextEntry

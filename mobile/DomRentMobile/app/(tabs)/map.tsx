@@ -17,6 +17,8 @@ import { Property } from '@/types';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MapPin, Navigation, X } from 'lucide-react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,6 +38,8 @@ interface PropertyPreview {
 export default function MapScreen() {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +127,7 @@ export default function MapScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Заголовок */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: C.border }]}>
         <ThemedText style={styles.title}>🗺️ Карта объектов</ThemedText>
         <ThemedText style={styles.subtitle}>
           {properties.length > 0 ? `${properties.length} объект(ов) на карте` : 'Загрузка...'}
@@ -159,7 +163,7 @@ export default function MapScreen() {
 
         {/* Кнопка "Моё местоположение" */}
         <TouchableOpacity
-          style={styles.myLocationBtn}
+          style={[styles.myLocationBtn, { backgroundColor: C.card }]}
           onPress={handleMyLocation}
           disabled={locationLoading}
         >
@@ -173,7 +177,7 @@ export default function MapScreen() {
 
       {/* Превью выбранного объекта */}
       {preview && (
-        <View style={styles.previewCard}>
+        <View style={[styles.previewCard, { backgroundColor: C.card }]}>
           {/* Закрыть */}
           <TouchableOpacity style={styles.previewClose} onPress={() => setPreview(null)}>
             <X size={20} color="#666" />

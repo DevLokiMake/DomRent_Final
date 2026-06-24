@@ -18,6 +18,8 @@ import { axiosInstance } from '@/api/axios';
 import { Property, City } from '@/types';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface FilterState {
   city: string;
@@ -32,6 +34,8 @@ const CARD_WIDTH = width - 32; // с отступами
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -214,7 +218,7 @@ export default function ExploreScreen() {
     return (
       <TouchableOpacity
         onPress={() => handlePropertyPress(item.id)}
-        style={styles.card}
+        style={[styles.card, { backgroundColor: C.card }]}
         activeOpacity={0.8}
       >
         {/* Изображение */}
@@ -319,7 +323,7 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Заголовок и кнопка фильтров */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: C.border }]}>
         <ThemedText style={styles.title}>🔍 Поиск объектов</ThemedText>
         <TouchableOpacity
           onPress={() => setShowFilters(true)}
@@ -358,9 +362,9 @@ export default function ExploreScreen() {
         onRequestClose={() => setShowFilters(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: C.modalBg }]}>
             {/* Заголовок модаля */}
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
               <ThemedText style={styles.modalTitle}>Фильтры</ThemedText>
               <TouchableOpacity onPress={() => setShowFilters(false)}>
                 <X size={24} color="#f43f5e" />
@@ -378,6 +382,7 @@ export default function ExploreScreen() {
                       key={contractType}
                       style={[
                         styles.typeButton,
+                        { backgroundColor: C.inputBg, borderColor: C.inputBorder },
                         filters.contractType === contractType && styles.typeButtonActive,
                       ]}
                       onPress={() => updateFilter('contractType', contractType)}
@@ -398,10 +403,10 @@ export default function ExploreScreen() {
               {/* Город */}
               <View style={styles.filterGroup}>
                 <ThemedText style={styles.filterLabel}>Город</ThemedText>
-                <View style={styles.pickerContainer}>
+                <View style={[styles.pickerContainer, { backgroundColor: C.inputBg, borderColor: C.inputBorder }]}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.citiesScroll}>
                     <TouchableOpacity
-                      style={[styles.cityPill, filters.city === '' && styles.cityPillActive]}
+                      style={[styles.cityPill, { backgroundColor: C.inputBg, borderColor: C.inputBorder }, filters.city === '' && styles.cityPillActive]}
                       onPress={() => updateFilter('city', '')}
                     >
                       <ThemedText style={[styles.cityPillText, filters.city === '' && styles.cityPillTextActive]}>Все</ThemedText>
@@ -409,7 +414,7 @@ export default function ExploreScreen() {
                     {cities.map((city) => (
                       <TouchableOpacity
                         key={city.id}
-                        style={[styles.cityPill, filters.city === city.name && styles.cityPillActive]}
+                        style={[styles.cityPill, { backgroundColor: C.inputBg, borderColor: C.inputBorder }, filters.city === city.name && styles.cityPillActive]}
                         onPress={() => updateFilter('city', city.name)}
                       >
                         <ThemedText style={[styles.cityPillText, filters.city === city.name && styles.cityPillTextActive]}>{city.name}</ThemedText>
@@ -428,6 +433,7 @@ export default function ExploreScreen() {
                       key={type}
                       style={[
                         styles.typeButton,
+                        { backgroundColor: C.inputBg, borderColor: C.inputBorder },
                         filters.type === type && styles.typeButtonActive,
                       ]}
                       onPress={() => updateFilter('type', type)}
@@ -456,7 +462,7 @@ export default function ExploreScreen() {
                 <ThemedText style={styles.filterLabel}>Цена за ночь (₸)</ThemedText>
                 <View style={styles.priceInputsContainer}>
                   <TextInput
-                    style={[styles.textInput, styles.priceInput]}
+                    style={[styles.textInput, styles.priceInput, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }]}
                     placeholder="От"
                     placeholderTextColor="#999"
                     keyboardType="numeric"
@@ -465,7 +471,7 @@ export default function ExploreScreen() {
                   />
                   <ThemedText style={styles.priceSeparator}>—</ThemedText>
                   <TextInput
-                    style={[styles.textInput, styles.priceInput]}
+                    style={[styles.textInput, styles.priceInput, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }]}
                     placeholder="До"
                     placeholderTextColor="#999"
                     keyboardType="numeric"
@@ -477,9 +483,9 @@ export default function ExploreScreen() {
             </ScrollView>
 
             {/* Кнопки действий */}
-            <View style={styles.modalActions}>
+            <View style={[styles.modalActions, { borderTopColor: C.border }]}>
               <TouchableOpacity
-                style={[styles.actionButton, styles.resetButton]}
+                style={[styles.actionButton, styles.resetButton, { backgroundColor: C.navItemBg, borderColor: C.inputBorder }]}
                 onPress={handleResetFilters}
               >
                 <ThemedText style={styles.resetButtonText}>Сбросить</ThemedText>

@@ -5,6 +5,8 @@ import { MapPin, Heart, Armchair, Home, DoorOpen } from 'lucide-react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { City } from '@/types';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export interface PropertyHeaderProps {
   title: string;
@@ -25,6 +27,8 @@ export function PropertyHeader({
   isFavorited,
   onToggleFavorite,
 }: PropertyHeaderProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const formattedPrice = price.toLocaleString('ru-RU', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -72,7 +76,7 @@ export function PropertyHeader({
         </View>
 
         <TouchableOpacity
-          style={[styles.favoriteButton, isFavorited && styles.favoriteButtonActive]}
+          style={[styles.favoriteButton, { backgroundColor: C.avatarBg }, isFavorited && styles.favoriteButtonActive]}
           onPress={onToggleFavorite}>
           <Heart
             size={24}
@@ -88,7 +92,7 @@ export function PropertyHeader({
       </ThemedText>
 
       {/* Местоположение и тип */}
-      <View style={styles.infoRow}>
+      <View style={[styles.infoRow, { borderBottomColor: C.border }]}>
         <View style={styles.infoItem}>
           <MapPin size={20} color="#0a84ff" />
           <ThemedText style={styles.infoText}>{city?.name || 'Город не указан'}</ThemedText>

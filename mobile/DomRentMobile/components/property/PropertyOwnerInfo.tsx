@@ -3,6 +3,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface OwnerInfo {
   id: number;
@@ -17,6 +19,8 @@ export interface PropertyOwnerInfoProps {
 }
 
 export function PropertyOwnerInfo({ description, owner }: PropertyOwnerInfoProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   return (
     <ThemedView style={styles.container}>
       {/* Раздел описания */}
@@ -36,7 +40,7 @@ export function PropertyOwnerInfo({ description, owner }: PropertyOwnerInfoProps
             Контактное лицо
           </ThemedText>
 
-          <View style={styles.ownerCard}>
+          <View style={[styles.ownerCard, { backgroundColor: C.navItemBg }]}>
             <View style={styles.ownerAvatar}>
               <ThemedText style={styles.ownerInitial}>
                 {owner.name?.charAt(0) || owner.email.charAt(0).toUpperCase()}

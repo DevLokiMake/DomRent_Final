@@ -49,13 +49,24 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 
+// Допустимые origins: localhost + все URL из FRONTEND_URL (через запятую)
+// Пример .env: FRONTEND_URL=https://domrent.vercel.app,https://www.domrent.kz
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://localhost:3000',
+  ...(process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map(u => u.trim()).filter(Boolean)
+    : []),
+]);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    process.env.FRONTEND_URL,        // Vercel URL — вставь в Railway env
-  ].filter(Boolean),
-  credentials: true
+  origin: (origin, callback) => {
+    // Разрешаем запросы без origin (мобильные приложения, Postman, SSR)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
 }));
 app.use(express.json());
 

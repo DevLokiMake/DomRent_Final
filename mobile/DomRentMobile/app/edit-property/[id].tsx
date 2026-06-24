@@ -15,6 +15,8 @@ import { axiosInstance } from '@/api/axios';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface FormData {
   title: string;
@@ -50,6 +52,10 @@ export default function EditPropertyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
+  const dynInput = [styles.input, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }];
+  const dynChip = [styles.chip, { backgroundColor: C.inputBg, borderColor: C.inputBorder }];
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -144,32 +150,32 @@ export default function EditPropertyScreen() {
       <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
         <View style={styles.group}>
           <ThemedText style={styles.label}>Название *</ThemedText>
-          <TextInput style={styles.input} value={form.title} onChangeText={v => setField('title', v)}
+          <TextInput style={dynInput} value={form.title} onChangeText={v => setField('title', v)}
             placeholder="Название объявления" placeholderTextColor="#bbb" />
         </View>
 
         <View style={styles.group}>
           <ThemedText style={styles.label}>Описание *</ThemedText>
-          <TextInput style={[styles.input, styles.textarea]} value={form.description}
+          <TextInput style={[dynInput, styles.textarea]} value={form.description}
             onChangeText={v => setField('description', v)} placeholder="Описание..."
             placeholderTextColor="#bbb" multiline numberOfLines={4} textAlignVertical="top" />
         </View>
 
         <View style={styles.group}>
           <ThemedText style={styles.label}>Город *</ThemedText>
-          <TextInput style={styles.input} value={form.city} onChangeText={v => setField('city', v)}
+          <TextInput style={dynInput} value={form.city} onChangeText={v => setField('city', v)}
             placeholder="Алматы" placeholderTextColor="#bbb" />
         </View>
 
         <View style={styles.group}>
           <ThemedText style={styles.label}>Цена (₸) *</ThemedText>
-          <TextInput style={styles.input} value={form.price} onChangeText={v => setField('price', v)}
+          <TextInput style={dynInput} value={form.price} onChangeText={v => setField('price', v)}
             placeholder="15000" placeholderTextColor="#bbb" keyboardType="numeric" />
         </View>
 
         <View style={styles.group}>
           <ThemedText style={styles.label}>Количество комнат</ThemedText>
-          <TextInput style={styles.input} value={form.rooms} onChangeText={v => setField('rooms', v)}
+          <TextInput style={dynInput} value={form.rooms} onChangeText={v => setField('rooms', v)}
             placeholder="2" placeholderTextColor="#bbb" keyboardType="numeric" />
         </View>
 
@@ -178,7 +184,7 @@ export default function EditPropertyScreen() {
           <View style={styles.chips}>
             {PROPERTY_TYPES.map(t => (
               <TouchableOpacity key={t.value}
-                style={[styles.chip, form.type === t.value && styles.chipActive]}
+                style={[dynChip, form.type === t.value && styles.chipActive]}
                 onPress={() => setField('type', t.value)}>
                 <ThemedText style={[styles.chipText, form.type === t.value && styles.chipTextActive]}>
                   {t.label}
@@ -193,7 +199,7 @@ export default function EditPropertyScreen() {
           <View style={styles.chips}>
             {CONTRACT_TYPES.map(t => (
               <TouchableOpacity key={t.value}
-                style={[styles.chip, form.contractType === t.value && styles.chipActive]}
+                style={[dynChip, form.contractType === t.value && styles.chipActive]}
                 onPress={() => setField('contractType', t.value)}>
                 <ThemedText style={[styles.chipText, form.contractType === t.value && styles.chipTextActive]}>
                   {t.label}

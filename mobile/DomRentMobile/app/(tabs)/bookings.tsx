@@ -13,6 +13,8 @@ import { axiosInstance } from '@/api/axios';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 type BookingStatus = 'PENDING' | 'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
@@ -55,6 +57,8 @@ const calcNights = (start: string, end: string) =>
 export default function BookingsScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,7 +119,7 @@ export default function BookingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: C.border }]}>
         <ThemedText style={styles.title}>Мои бронирования</ThemedText>
         <ThemedText style={styles.count}>{bookings.length}</ThemedText>
       </View>
@@ -134,7 +138,7 @@ export default function BookingsScreen() {
 
           return (
             <TouchableOpacity
-              style={styles.card}
+              style={[styles.card, { backgroundColor: C.card }]}
               activeOpacity={0.85}
               onPress={() => router.push(`/property/${item.property?.id}`)}
             >
@@ -172,7 +176,7 @@ export default function BookingsScreen() {
                   <ThemedText style={styles.metaText}>{nights} ночей</ThemedText>
                 </View>
 
-                <View style={styles.priceRow}>
+                <View style={[styles.priceRow, { borderTopColor: C.border }]}>
                   <ThemedText style={styles.priceLabel}>Итого</ThemedText>
                   <ThemedText style={styles.price}>{item.totalPrice.toLocaleString('ru-RU')} ₸</ThemedText>
                 </View>

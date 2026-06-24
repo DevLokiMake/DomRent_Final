@@ -5,6 +5,8 @@ import { Calendar } from 'lucide-react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PropertyOwner } from '@/types';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export interface BookingFormProps {
   startDate: string;
@@ -41,6 +43,8 @@ export function BookingForm({
   onBooking,
   isLoading = false,
 }: BookingFormProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const formattedTotalPrice = totalPrice.toLocaleString('ru-RU');
 
   // Для продажи не показываем форму бронирования
@@ -91,13 +95,13 @@ export function BookingForm({
         </ThemedText>
 
         {/* Дата заезда */}
-        <View style={styles.dateInputContainer}>
+        <View style={[styles.dateInputContainer, { backgroundColor: C.inputBg, borderColor: C.inputBorder }]}>
           <View style={styles.dateInputWrapper}>
             <Calendar size={18} color="#0a84ff" />
             <ThemedText style={styles.dateLabel}>Заезд</ThemedText>
           </View>
           <TextInput
-            style={styles.dateInput}
+            style={[styles.dateInput, { color: C.inputText }]}
             placeholder="YYYY-MM-DD"
             placeholderTextColor="#999"
             value={startDate}
@@ -107,13 +111,13 @@ export function BookingForm({
         </View>
 
         {/* Дата выезда */}
-        <View style={styles.dateInputContainer}>
+        <View style={[styles.dateInputContainer, { backgroundColor: C.inputBg, borderColor: C.inputBorder }]}>
           <View style={styles.dateInputWrapper}>
             <Calendar size={18} color="#0a84ff" />
             <ThemedText style={styles.dateLabel}>Выезд</ThemedText>
           </View>
           <TextInput
-            style={styles.dateInput}
+            style={[styles.dateInput, { color: C.inputText }]}
             placeholder="YYYY-MM-DD"
             placeholderTextColor="#999"
             value={endDate}
@@ -125,7 +129,7 @@ export function BookingForm({
 
       {/* Информация о стоимости */}
       {startDate && endDate && totalNights > 0 && (
-        <View style={styles.priceBreakdown}>
+        <View style={[styles.priceBreakdown, { backgroundColor: scheme === 'dark' ? '#1a2a3a' : '#f0f7ff' }]}>
           <View style={styles.priceRow}>
             <ThemedText style={styles.priceRowLabel}>
               {totalNights} {totalNights === 1 ? 'ночь' : 'ночей'}
@@ -137,6 +141,7 @@ export function BookingForm({
               styles.priceRow,
               styles.totalPriceRow,
               styles.borderTopPrice,
+              { borderTopColor: C.inputBorder },
             ]}>
             <ThemedText style={styles.totalLabel}>Итого</ThemedText>
             <ThemedText style={styles.totalPrice}>{formattedTotalPrice} ₸</ThemedText>
@@ -145,8 +150,8 @@ export function BookingForm({
       )}
 
       {/* Информационное сообщение */}
-      <View style={styles.infoBox}>
-        <ThemedText style={styles.infoText}>
+      <View style={[styles.infoBox, { backgroundColor: scheme === 'dark' ? '#1a2535' : '#e3f2fd' }]}>
+        <ThemedText style={[styles.infoText, { color: scheme === 'dark' ? '#90caf9' : '#1976d2' }]}>
           ℹ️ Выберите даты заезда и выезда, чтобы увидеть итоговую стоимость
         </ThemedText>
       </View>
@@ -163,6 +168,8 @@ export function BookingFormAction({
   onContactSeller,
   isLoading = false,
 }: BookingFormActionProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const formattedTotalPrice = totalPrice.toLocaleString('ru-RU');
 
   // Для продажи показываем кнопку связи с продавцом
@@ -191,7 +198,7 @@ export function BookingFormAction({
     };
 
     return (
-      <View style={styles.actionButtons}>
+      <View style={[styles.actionButtons, { borderTopColor: C.border }]}>
         <TouchableOpacity
           style={[styles.bookingButton, styles.contactButton]}
           onPress={handleContactSeller}
@@ -207,7 +214,7 @@ export function BookingFormAction({
   // Для аренды показываем кнопку бронирования
 
   return (
-    <View style={styles.actionButtons}>
+    <View style={[styles.actionButtons, { borderTopColor: C.border }]}>
       <TouchableOpacity
         style={[
           styles.bookingButton,

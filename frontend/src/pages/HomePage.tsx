@@ -368,9 +368,9 @@ const HomePage = () => {
                     </div>
                     <div className="p-4 flex items-center justify-between">
                       <p className="font-bold text-gray-900 dark:text-white text-sm">{getPriceText(property)}</p>
-                      {(property._count as any)?.bookings > 0 && (
+                      {(property._count?.bookings ?? 0) > 0 && (
                         <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
-                          {(property._count as any).bookings} брон.
+                          {property._count!.bookings} брон.
                         </span>
                       )}
                     </div>

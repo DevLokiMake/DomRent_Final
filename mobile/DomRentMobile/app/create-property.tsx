@@ -15,6 +15,8 @@ import { axiosInstance } from '@/api/axios';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface FormData {
   title: string;
@@ -43,6 +45,10 @@ const CONTRACT_TYPES: Array<{ value: FormData['contractType']; label: string }> 
 export default function CreatePropertyScreen() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
+  const dynInput = [styles.input, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }];
+  const dynChip = [styles.chip, { backgroundColor: C.inputBg, borderColor: C.inputBorder }];
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<FormData>({
     title: '',
@@ -122,7 +128,7 @@ export default function CreatePropertyScreen() {
         <View style={styles.group}>
           <ThemedText style={styles.label}>Название *</ThemedText>
           <TextInput
-            style={styles.input}
+            style={dynInput}
             value={form.title}
             onChangeText={v => setField('title', v)}
             placeholder="Уютная квартира в центре"
@@ -134,7 +140,7 @@ export default function CreatePropertyScreen() {
         <View style={styles.group}>
           <ThemedText style={styles.label}>Описание *</ThemedText>
           <TextInput
-            style={[styles.input, styles.textarea]}
+            style={[dynInput, styles.textarea]}
             value={form.description}
             onChangeText={v => setField('description', v)}
             placeholder="Подробное описание жилья..."
@@ -149,7 +155,7 @@ export default function CreatePropertyScreen() {
         <View style={styles.group}>
           <ThemedText style={styles.label}>Город *</ThemedText>
           <TextInput
-            style={styles.input}
+            style={dynInput}
             value={form.city}
             onChangeText={v => setField('city', v)}
             placeholder="Алматы"
@@ -161,7 +167,7 @@ export default function CreatePropertyScreen() {
         <View style={styles.group}>
           <ThemedText style={styles.label}>Цена (₸) *</ThemedText>
           <TextInput
-            style={styles.input}
+            style={dynInput}
             value={form.price}
             onChangeText={v => setField('price', v)}
             placeholder="15000"
@@ -174,7 +180,7 @@ export default function CreatePropertyScreen() {
         <View style={styles.group}>
           <ThemedText style={styles.label}>Количество комнат</ThemedText>
           <TextInput
-            style={styles.input}
+            style={dynInput}
             value={form.rooms}
             onChangeText={v => setField('rooms', v)}
             placeholder="2"
@@ -190,7 +196,7 @@ export default function CreatePropertyScreen() {
             {PROPERTY_TYPES.map(t => (
               <TouchableOpacity
                 key={t.value}
-                style={[styles.chip, form.type === t.value && styles.chipActive]}
+                style={[dynChip, form.type === t.value && styles.chipActive]}
                 onPress={() => setField('type', t.value)}
               >
                 <ThemedText style={[styles.chipText, form.type === t.value && styles.chipTextActive]}>
@@ -208,7 +214,7 @@ export default function CreatePropertyScreen() {
             {CONTRACT_TYPES.map(t => (
               <TouchableOpacity
                 key={t.value}
-                style={[styles.chip, form.contractType === t.value && styles.chipActive]}
+                style={[dynChip, form.contractType === t.value && styles.chipActive]}
                 onPress={() => setField('contractType', t.value)}
               >
                 <ThemedText style={[styles.chipText, form.contractType === t.value && styles.chipTextActive]}>

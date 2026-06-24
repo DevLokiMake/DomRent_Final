@@ -14,6 +14,8 @@ import { axiosInstance } from '@/api/axios';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface FavoriteProperty {
   id: number;
@@ -33,6 +35,8 @@ interface FavoriteProperty {
 export default function FavoritesScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const [favorites, setFavorites] = useState<FavoriteProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -106,7 +110,7 @@ export default function FavoritesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: C.border }]}>
         <ThemedText style={styles.title}>Избранное</ThemedText>
         <ThemedText style={styles.count}>{favorites.length}</ThemedText>
       </View>
@@ -123,7 +127,7 @@ export default function FavoritesScreen() {
           const imageUrl = p.images?.[0];
           return (
             <TouchableOpacity
-              style={styles.card}
+              style={[styles.card, { backgroundColor: C.card }]}
               activeOpacity={0.85}
               onPress={() => router.push(`/property/${p.id}`)}
             >

@@ -7,6 +7,8 @@ import { ChevronLeft, Share2 } from 'lucide-react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { usePropertyDetails } from '@/hooks/usePropertyDetails';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 import {
   PropertyImageCarousel,
   PropertyHeader,
@@ -17,6 +19,8 @@ import {
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
+  const scheme = useColorScheme() ?? 'light';
+  const C = Colors[scheme];
   const {
     property,
     isLoading,
@@ -59,7 +63,7 @@ export default function PropertyDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: C.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={28} color="#0a84ff" />
         </TouchableOpacity>

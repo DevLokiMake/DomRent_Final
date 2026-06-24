@@ -29,6 +29,11 @@ export interface Property {
   rejectionReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  _count?: {
+    bookings?: number;
+    reviews?: number;
+    favorites?: number;
+  };
 }
 
 export interface PropertyOwner {
