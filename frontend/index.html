@@ -14,6 +14,13 @@
       * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
       html { scroll-behavior: smooth; }
     </style>
+    <script>
+      // Prevent flash of wrong theme before React loads
+      (function() {
+        var t = localStorage.getItem('domrent_theme');
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

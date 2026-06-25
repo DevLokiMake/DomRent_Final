@@ -25,10 +25,10 @@ export default {
         },
       },
       boxShadow: {
-        'card':       '0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.08)',
-        'card-hover': '0 4px 12px rgba(0,0,0,0.08), 0 16px 40px rgba(0,0,0,0.12)',
-        'nav':        '0 1px 0 rgba(0,0,0,0.08)',
-        'modal':      '0 8px 32px rgba(0,0,0,0.18)',
+        'card':       '0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06)',
+        'card-hover': '0 4px 16px rgba(0,0,0,0.10), 0 12px 36px rgba(0,0,0,0.10)',
+        'nav':        '0 1px 0 rgba(0,0,0,0.06)',
+        'modal':      '0 8px 32px rgba(0,0,0,0.16)',
       },
       animation: {
         'fade-in':  'fadeIn 0.2s ease-out',

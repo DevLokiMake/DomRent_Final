@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Loader, AlertCircle, X, Heart, Wifi, Car, PawPrint, BedDouble, SlidersHorizontal, Search, TrendingUp, Clock } from "lucide-react";
+import { MapPin, Loader, AlertCircle, X, Heart, Wifi, Car, PawPrint, BedDouble, SlidersHorizontal, Search, TrendingUp, Clock, Map, LayoutGrid } from "lucide-react";
+import L from "leaflet";
 import axiosInstance from "../api/axios";
 import type { Property } from "../types";
 
@@ -28,6 +29,79 @@ interface RecentItem {
   contractType: string; image: string | null; city: string;
 }
 
+// ── Map View ──────────────────────────────────────────────────────────────────
+const MapView = ({ properties }: { properties: Property[] }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
+  // Init map once
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = L.map(containerRef.current).setView([48.0, 68.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+    }).addTo(map);
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  // Sync markers when properties change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    const withCoords = properties.filter(p => p.latitude && p.longitude);
+    const bounds: L.LatLngTuple[] = [];
+
+    withCoords.forEach(p => {
+      const price = `${p.price.toLocaleString('ru')} ₸${p.contractType === 'RENT' ? '/н' : ''}`;
+      const icon = L.divIcon({
+        html: `<div style="background:#111827;color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);border:2px solid #fff;cursor:pointer">${price}</div>`,
+        className: '',
+        iconSize: [110, 28],
+        iconAnchor: [55, 28],
+      });
+      const img = p.coverImage || p.images?.[0];
+      const city = typeof p.city === 'object' && p.city ? p.city.name : (p.city as string) || '';
+      const popup = `
+        <div style="min-width:200px;font-family:Inter,system-ui,sans-serif">
+          ${img ? `<img src="${img}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:8px">` : ''}
+          <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:2px">${p.title}</div>
+          <div style="color:#6b7280;font-size:12px;margin-bottom:6px">${city}</div>
+          <div style="font-weight:800;font-size:15px;color:#f43f5e;margin-bottom:10px">${p.price.toLocaleString('ru')} ₸${p.contractType === 'RENT' ? '/ночь' : ''}</div>
+          <a href="/property/${p.id}" style="display:block;padding:8px;background:#111827;color:#fff;text-align:center;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none">Посмотреть →</a>
+        </div>`;
+      const marker = L.marker([p.latitude!, p.longitude!], { icon }).addTo(map);
+      marker.bindPopup(popup, { maxWidth: 240 });
+      markersRef.current.push(marker);
+      bounds.push([p.latitude!, p.longitude!]);
+    });
+
+    if (bounds.length > 0) {
+      try { map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50], maxZoom: 14 }); }
+      catch { map.setView([48.0, 68.0], 5); }
+    }
+  }, [properties]);
+
+  return (
+    <div className="relative rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-card">
+      {properties.filter(p => p.latitude && p.longitude).length === 0 && (
+        <div className="absolute inset-0 z-[500] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 pointer-events-none">
+          <div className="text-center">
+            <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Нет объектов с координатами</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Укажите адрес при создании объявления</p>
+          </div>
+        </div>
+      )}
+      <div ref={containerRef} style={{ height: 580 }} />
+    </div>
+  );
+};
+
 const HomePage = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +113,7 @@ const HomePage = () => {
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [popularProperties, setPopularProperties] = useState<Property[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentItem[]>([]);
+  const [view, setView] = useState<'grid' | 'map'>('grid');
 
   const fetchProperties = useCallback(async (f?: FilterState) => {
     try {
@@ -212,20 +287,41 @@ const HomePage = () => {
             ))}
           </div>
 
-          <button
-            onClick={() => setShowFilters(o => !o)}
-            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-2xl border text-sm font-semibold transition-all ${
-              hasActive
-                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
-                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Фильтры
-            {activeCount > 0 && (
-              <span className="w-5 h-5 bg-brand-500 text-white text-xs rounded-full flex items-center justify-center">{activeCount}</span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* View toggle */}
+            <div className="flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <button
+                onClick={() => setView('grid')}
+                title="Сетка"
+                className={`p-2 transition-colors ${view === 'grid' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setView('map')}
+                title="Карта"
+                className={`p-2 transition-colors ${view === 'map' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                <Map className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filters button */}
+            <button
+              onClick={() => setShowFilters(o => !o)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl border text-sm font-semibold transition-all ${
+                hasActive
+                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
+                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Фильтры
+              {activeCount > 0 && (
+                <span className="w-5 h-5 bg-brand-500 text-white text-xs rounded-full flex items-center justify-center">{activeCount}</span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Expanded filters */}
@@ -417,8 +513,20 @@ const HomePage = () => {
           </div>
         )}
 
+        {/* Map view */}
+        {!loading && view === 'map' && (
+          <div className="relative">
+            <MapView properties={properties} />
+            {properties.filter(p => p.latitude && p.longitude).length === 0 && properties.length > 0 && (
+              <p className="text-center text-sm text-gray-400 dark:text-gray-500 mt-3">
+                У объявлений нет координат — укажите их при создании объявления
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Property grid */}
-        {!loading && properties.length > 0 && (
+        {!loading && properties.length > 0 && view === 'grid' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {properties.map(property => (
               <Link

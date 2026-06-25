@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axiosInstance from "../api/axios";
+import L from 'leaflet';
 import {
   AlertCircle, CheckCircle, Loader, Plus, MapPin,
   Upload, X, Star, Wifi, Car, PawPrint, BedDouble,
@@ -70,6 +71,72 @@ const CreatePropertyPage: React.FC = () => {
   const [newCityName, setNewCityName] = useState('');
 
   const [geocoding, setGeocoding] = useState(false);
+
+  // Interactive map picker
+  const mapPickerRef = useRef<HTMLDivElement>(null);
+  const mapPickerInstanceRef = useRef<L.Map | null>(null);
+  const pickerMarkerRef = useRef<L.Marker | null>(null);
+
+  useEffect(() => {
+    if (!mapPickerRef.current || mapPickerInstanceRef.current) return;
+    const map = L.map(mapPickerRef.current).setView([48.0, 68.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+    }).addTo(map);
+    mapPickerInstanceRef.current = map;
+
+    const pinIcon = L.divIcon({
+      html: `<div style="width:18px;height:18px;background:#f43f5e;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      setForm(prev => ({ ...prev, latitude: lat, longitude: lng }));
+      if (pickerMarkerRef.current) {
+        pickerMarkerRef.current.setLatLng(e.latlng);
+      } else {
+        const marker = L.marker(e.latlng, { icon: pinIcon, draggable: true }).addTo(map);
+        marker.on('dragend', (ev: any) => {
+          const pos = ev.target.getLatLng();
+          setForm(prev => ({ ...prev, latitude: pos.lat, longitude: pos.lng }));
+        });
+        pickerMarkerRef.current = marker;
+      }
+    });
+
+    return () => {
+      map.remove();
+      mapPickerInstanceRef.current = null;
+      pickerMarkerRef.current = null;
+    };
+  }, []);
+
+  // Sync marker when coordinates come from geocoding
+  useEffect(() => {
+    const map = mapPickerInstanceRef.current;
+    if (!map || form.latitude === null || form.longitude === null) return;
+    const latlng: L.LatLngTuple = [form.latitude, form.longitude];
+    if (pickerMarkerRef.current) {
+      pickerMarkerRef.current.setLatLng(latlng);
+    } else {
+      const pinIcon = L.divIcon({
+        html: `<div style="width:18px;height:18px;background:#f43f5e;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
+        className: '',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+      const marker = L.marker(latlng, { icon: pinIcon, draggable: true }).addTo(map);
+      marker.on('dragend', (ev: any) => {
+        const pos = ev.target.getLatLng();
+        setForm(prev => ({ ...prev, latitude: pos.lat, longitude: pos.lng }));
+      });
+      pickerMarkerRef.current = marker;
+    }
+    map.setView(latlng, 14);
+  }, [form.latitude, form.longitude]);
 
   useEffect(() => {
     axiosInstance.get('/cities')
@@ -463,19 +530,38 @@ const CreatePropertyPage: React.FC = () => {
             {form.latitude !== null && form.longitude !== null ? (
               <div className="mt-2 flex items-center justify-between bg-green-50 dark:bg-green-900/20 rounded-xl px-4 py-2 border border-green-200 dark:border-green-800">
                 <span className="text-sm text-green-700 dark:text-green-400 font-medium">
-                  Координаты: {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
+                  📍 {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setForm(p => ({ ...p, latitude: null, longitude: null }))}
+                  onClick={() => {
+                    setForm(p => ({ ...p, latitude: null, longitude: null }));
+                    if (pickerMarkerRef.current) {
+                      pickerMarkerRef.current.remove();
+                      pickerMarkerRef.current = null;
+                    }
+                  }}
                   className="text-xs text-red-500 hover:text-red-700 transition"
                 >
                   Сбросить
                 </button>
               </div>
             ) : (
-              <p className="mt-1.5 text-xs text-gray-400">Введите адрес и нажмите «Найти» для автоопределения координат</p>
+              <p className="mt-1.5 text-xs text-gray-400">Введите адрес и нажмите «Найти» или кликните на карту</p>
             )}
+          </div>
+
+          {/* Interactive map picker */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              Отметьте на карте
+              <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">(кликните чтобы поставить метку, можно перетащить)</span>
+            </label>
+            <div
+              ref={mapPickerRef}
+              style={{ height: 280 }}
+              className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 cursor-crosshair"
+            />
           </div>
 
           {/* Кнопки */}

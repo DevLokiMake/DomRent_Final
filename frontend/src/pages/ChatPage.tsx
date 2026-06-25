@@ -118,18 +118,18 @@ const ChatPage = () => {
   });
 
   if (loading) return (
-    <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-white">
+    <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-white dark:bg-gray-950">
       <Loader className="w-8 h-8 animate-spin text-gray-400" />
     </div>
   );
 
   if (error) return (
-    <div className="h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-white">
+    <div className="h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-white dark:bg-gray-950">
       <div className="text-center max-w-sm">
         <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-        <p className="font-semibold text-gray-800 mb-1">Ошибка загрузки</p>
-        <p className="text-sm text-gray-500 mb-4">{error}</p>
-        <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline">← Назад</button>
+        <p className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Ошибка загрузки</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+        <button onClick={() => navigate(-1)} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">← Назад</button>
       </div>
     </div>
   );
@@ -146,16 +146,16 @@ const ChatPage = () => {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors flex-shrink-0"
+            className="w-9 h-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
           {coverImg && (
             <img src={coverImg} alt="" className="w-10 h-10 rounded-2xl object-cover flex-shrink-0" />
           )}
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-sm truncate">{booking?.property?.title || "Объект"}</p>
-            <p className="text-xs text-gray-500 truncate">{interlocutorName}</p>
+            <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{booking?.property?.title || "Объект"}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{interlocutorName}</p>
           </div>
         </div>
       </div>
@@ -165,22 +165,22 @@ const ChatPage = () => {
         <div className="max-w-2xl mx-auto space-y-1">
           {grouped.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Send className="w-5 h-5 text-gray-300" />
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Send className="w-5 h-5 text-gray-300 dark:text-gray-600" />
               </div>
-              <p className="text-gray-400 text-sm font-medium">Сообщений пока нет</p>
-              <p className="text-gray-300 text-xs mt-1">Начните переписку!</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm font-medium">Сообщений пока нет</p>
+              <p className="text-gray-300 dark:text-gray-600 text-xs mt-1">Начните переписку!</p>
             </div>
           ) : (
             grouped.map(group => (
               <div key={group.date}>
                 {/* Date divider */}
                 <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400 font-medium flex-shrink-0">
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium flex-shrink-0">
                     {formatDate(group.msgs[0].createdAt)}
                   </span>
-                  <div className="flex-1 h-px bg-gray-200" />
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
                 </div>
 
                 {group.msgs.map((msg, i) => {
@@ -247,7 +247,7 @@ const ChatPage = () => {
             <button
               onClick={handleSend}
               disabled={!text.trim() || sending}
-              className="w-11 h-11 bg-gray-900 hover:bg-gray-700 disabled:opacity-30 text-white rounded-2xl flex items-center justify-center transition-all flex-shrink-0"
+              className="w-11 h-11 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-30 text-white dark:text-gray-900 rounded-2xl flex items-center justify-center transition-all flex-shrink-0"
             >
               {sending ? <Loader className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>

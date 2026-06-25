@@ -494,7 +494,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-[#f8fafc] dark:bg-gray-950 transition-colors duration-200">
+        <div className="min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors duration-200">
           <Navbar />
           <main>
             <Routes>
