@@ -33,7 +33,7 @@ async function main() {
 
   // ── Cities ───────────────────────────────────────────────────────────────────
   const cityNames = ['Алматы', 'Астана', 'Шымкент', 'Актобе', 'Актау'];
-  const cities: Record<string, { id: number }> = {};
+  const cities = {};
   for (const name of cityNames) {
     const city = await prisma.city.upsert({ where: { name }, update: {}, create: { name } });
     cities[name] = city;
