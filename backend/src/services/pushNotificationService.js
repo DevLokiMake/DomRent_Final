@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../config/logger.js';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -12,7 +13,7 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 export const sendPushNotification = async (expoPushToken, title, body, data = {}) => {
   if (!expoPushToken) return;
   if (!expoPushToken.startsWith('ExponentPushToken[') && !expoPushToken.startsWith('ExpoPushToken[')) {
-    console.warn('[push] invalid token format:', expoPushToken);
+    logger.warn('[push] invalid token format:', expoPushToken);
     return;
   }
 
@@ -31,7 +32,7 @@ export const sendPushNotification = async (expoPushToken, title, body, data = {}
       },
     });
   } catch (err) {
-    console.warn('[push] send failed:', err.message);
+    logger.warn('[push] send failed:', err.message);
   }
 };
 

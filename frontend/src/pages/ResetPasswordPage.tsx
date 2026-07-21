@@ -28,10 +28,18 @@ const ResetPasswordPage = () => {
     );
   }
 
+  const getPasswordIssue = (pwd: string): string | null => {
+    if (pwd.length < 8) return "Минимум 8 символов";
+    if (!/[A-Za-zА-Яа-яЁё]/.test(pwd)) return "Добавьте хотя бы одну букву";
+    if (!/[0-9]/.test(pwd)) return "Добавьте хотя бы одну цифру";
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) { setError("Пароли не совпадают"); return; }
-    if (password.length < 6) { setError("Минимум 6 символов"); return; }
+    const passwordIssue = getPasswordIssue(password);
+    if (passwordIssue) { setError(passwordIssue); return; }
 
     setLoading(true);
     setError("");
@@ -87,7 +95,7 @@ const ResetPasswordPage = () => {
                       type={showPass ? "text" : "password"}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      placeholder="Минимум 6 символов"
+                      placeholder="Минимум 8 символов, буквы и цифры"
                       required
                       className="w-full pl-10 pr-11 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                     />

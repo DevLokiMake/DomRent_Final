@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, type ReactNode } from 'react';
+import api from '../api/axios';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -25,10 +26,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    const currentToken = token;
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Отзываем токен на бэкенде (best-effort) — иначе он остаётся рабочим до истечения 7 дней
+    if (currentToken) {
+      api.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${currentToken}` } }).catch(() => {});
+    }
   };
 
   return (

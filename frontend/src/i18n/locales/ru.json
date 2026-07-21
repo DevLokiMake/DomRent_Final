@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Главная",
+    "marketStats": "Аналитика",
     "bookings": "Бронирования",
     "favorites": "Избранное",
     "createListing": "Разместить жильё",
@@ -216,7 +217,17 @@
     "save": "Сохранить",
     "saving": "Сохранение...",
     "saved": "Сохранено!",
-    "memberSince": "Участник с"
+    "memberSince": "Участник с",
+    "stats": {
+      "title": "Моя статистика",
+      "totalBookings": "Бронирований",
+      "totalNights": "Ночей всего",
+      "totalSpent": "Всего потрачено",
+      "favoriteCity": "Любимый город",
+      "reviewsWritten": "Отзывов оставлено",
+      "favoritesCount": "В избранном",
+      "empty": "Пока нет бронирований — статистика появится после первой поездки"
+    }
   },
   "property": {
     "bookNow": "Забронировать",

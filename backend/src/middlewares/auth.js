@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -22,9 +23,17 @@ export const authenticateToken = async (req, res, next) => {
     // Проверка и декодирование токена
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Токен мог быть отозван через /auth/logout — проверяем денилист по jti
+    if (decoded.jti) {
+      const revoked = await prisma.revokedToken.findUnique({ where: { jti: decoded.jti } });
+      if (revoked) {
+        return res.status(401).json({ error: 'Токен отозван. Войдите заново.' });
+      }
+    }
+
     // Проверка существования пользователя в БД
-    const user = await prisma.user.findUnique({ 
-      where: { id: decoded.id } 
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id }
     });
 
     if (!user) {
@@ -38,8 +47,9 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Добавление пользователя в request объект
+    // Добавление пользователя и payload токена (jti/exp нужны, например, для /auth/logout)
     req.user = user;
+    req.tokenPayload = decoded;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -48,7 +58,7 @@ export const authenticateToken = async (req, res, next) => {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Недействительный токен.' });
     }
-    console.error('Auth middleware unexpected error:', error.message);
+    logger.error('Auth middleware unexpected error:', error.message);
     res.status(401).json({ error: 'Ошибка аутентификации.' });
   }
 };

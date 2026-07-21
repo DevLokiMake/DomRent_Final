@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { sendPushNotification } from '../services/pushNotificationService.js';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -21,7 +22,7 @@ export const createNotification = async (userId, type, title, body, entityId = n
     }
     return notification;
   } catch (err) {
-    console.error('createNotification error:', err);
+    logger.error('createNotification error:', err);
   }
 };
 
@@ -39,7 +40,7 @@ export const savePushToken = async (req, res) => {
     });
     res.json({ message: 'Push token сохранён' });
   } catch (error) {
-    console.error('savePushToken error:', error);
+    logger.error('savePushToken error:', error);
     res.status(500).json({ error: 'Ошибка сохранения токена' });
   }
 };
@@ -60,7 +61,7 @@ export const getNotifications = async (req, res) => {
 
     res.json({ unreadCount, notifications });
   } catch (error) {
-    console.error('getNotifications error:', error);
+    logger.error('getNotifications error:', error);
     res.status(500).json({ error: 'Ошибка при получении уведомлений' });
   }
 };
@@ -77,7 +78,7 @@ export const markAllRead = async (req, res) => {
     });
     res.json({ message: 'Все уведомления прочитаны' });
   } catch (error) {
-    console.error('markAllRead error:', error);
+    logger.error('markAllRead error:', error);
     res.status(500).json({ error: 'Ошибка при обновлении уведомлений' });
   }
 };

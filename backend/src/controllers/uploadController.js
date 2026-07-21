@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
+import logger from '../config/logger.js';
 
 // Конфигурация Cloudinary (ключи из .env)
 cloudinary.config({
@@ -42,7 +43,7 @@ export const uploadImages = async (req, res) => {
       urls
     });
   } catch (error) {
-    console.error('uploadImages error:', error);
+    logger.error('uploadImages error:', error);
     res.status(500).json({ error: 'Ошибка при загрузке изображений' });
   }
 };

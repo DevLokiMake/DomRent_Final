@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController.js';
 import { logAdminAction } from '../helpers/auditLog.js';
 import { sendPropertyModerationNotification } from '../services/telegramService.js';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -107,7 +108,7 @@ export const getStats = async (req, res) => {
       usersByRole: usersByRole.map(r => ({ role: r.role, count: r._count.id })),
     });
   } catch (error) {
-    console.error('getStats error:', error);
+    logger.error('getStats error:', error);
     res.status(500).json({ error: 'Ошибка получения статистики' });
   }
 };
@@ -220,7 +221,7 @@ export const getAnalytics = async (req, res) => {
 
     res.json({ monthlyUsers, monthlyBookings, top10, topCities });
   } catch (error) {
-    console.error('getAnalytics error:', error);
+    logger.error('getAnalytics error:', error);
     res.status(500).json({ error: 'Ошибка получения аналитики' });
   }
 };
@@ -260,7 +261,7 @@ export const getUsers = async (req, res) => {
 
     res.json({ users, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
-    console.error('getUsers error:', error);
+    logger.error('getUsers error:', error);
     res.status(500).json({ error: 'Ошибка получения пользователей' });
   }
 };
@@ -297,7 +298,7 @@ export const toggleUserBan = async (req, res) => {
 
     res.json({ message: banned ? 'Пользователь заблокирован' : 'Пользователь разблокирован', user });
   } catch (error) {
-    console.error('toggleUserBan error:', error);
+    logger.error('toggleUserBan error:', error);
     res.status(500).json({ error: 'Ошибка при изменении статуса пользователя' });
   }
 };
@@ -329,7 +330,7 @@ export const changeUserRole = async (req, res) => {
 
     res.json({ message: 'Роль обновлена', user });
   } catch (error) {
-    console.error('changeUserRole error:', error);
+    logger.error('changeUserRole error:', error);
     res.status(500).json({ error: 'Ошибка при изменении роли' });
   }
 };
@@ -361,7 +362,7 @@ export const getPropertiesAdmin = async (req, res) => {
 
     res.json({ properties, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
-    console.error('getPropertiesAdmin error:', error);
+    logger.error('getPropertiesAdmin error:', error);
     res.status(500).json({ error: 'Ошибка получения объявлений' });
   }
 };
@@ -394,7 +395,7 @@ export const approveProperty = async (req, res) => {
 
     res.json({ message: 'Объявление одобрено', property });
   } catch (error) {
-    console.error('approveProperty error:', error);
+    logger.error('approveProperty error:', error);
     res.status(500).json({ error: 'Ошибка при одобрении' });
   }
 };
@@ -431,7 +432,7 @@ export const rejectProperty = async (req, res) => {
 
     res.json({ message: 'Объявление отклонено', property });
   } catch (error) {
-    console.error('rejectProperty error:', error);
+    logger.error('rejectProperty error:', error);
     res.status(500).json({ error: 'Ошибка при отклонении' });
   }
 };
@@ -464,7 +465,7 @@ export const getAdminBookings = async (req, res) => {
 
     res.json({ bookings, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
-    console.error('getAdminBookings error:', error);
+    logger.error('getAdminBookings error:', error);
     res.status(500).json({ error: 'Ошибка получения бронирований' });
   }
 };
@@ -491,7 +492,7 @@ export const getAdminReviews = async (req, res) => {
 
     res.json({ reviews, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
-    console.error('getAdminReviews error:', error);
+    logger.error('getAdminReviews error:', error);
     res.status(500).json({ error: 'Ошибка получения отзывов' });
   }
 };
@@ -512,7 +513,7 @@ export const deleteAdminReview = async (req, res) => {
 
     res.json({ message: 'Отзыв удалён' });
   } catch (error) {
-    console.error('deleteAdminReview error:', error);
+    logger.error('deleteAdminReview error:', error);
     res.status(500).json({ error: 'Ошибка удаления отзыва' });
   }
 };
@@ -546,7 +547,7 @@ export const getAuditLog = async (req, res) => {
 
     res.json({ logs, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
-    console.error('getAuditLog error:', error);
+    logger.error('getAuditLog error:', error);
     res.status(500).json({ error: 'Ошибка получения журнала' });
   }
 };

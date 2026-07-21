@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Home",
+    "marketStats": "Market stats",
     "bookings": "Bookings",
     "favorites": "Favorites",
     "createListing": "List your home",
@@ -216,7 +217,17 @@
     "save": "Save",
     "saving": "Saving...",
     "saved": "Saved!",
-    "memberSince": "Member since"
+    "memberSince": "Member since",
+    "stats": {
+      "title": "My stats",
+      "totalBookings": "Bookings",
+      "totalNights": "Total nights",
+      "totalSpent": "Total spent",
+      "favoriteCity": "Favorite city",
+      "reviewsWritten": "Reviews written",
+      "favoritesCount": "Saved listings",
+      "empty": "No bookings yet — stats will appear after your first trip"
+    }
   },
   "property": {
     "bookNow": "Book now",

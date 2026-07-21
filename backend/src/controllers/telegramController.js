@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { signAuthToken } from '../helpers/jwt.js';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -55,15 +56,14 @@ export const linkAccount = async (req, res) => {
       select: { id: true, email: true, name: true, role: true },
     });
 
-    const token = jwt.sign(
+    const token = signAuthToken(
       { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
     res.json({ token, userId: user.id, name: user.name, role: user.role });
   } catch (err) {
-    console.error('[telegram/link]', err);
+    logger.error('[telegram/link]', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

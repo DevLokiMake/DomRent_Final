@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +18,7 @@ const send = async (telegramId, type, data) => {
     await notify.post('/notify', { telegramId, type, data });
   } catch (err) {
     // Bot may not be running — log and continue
-    console.warn(`[telegram] notify failed for ${telegramId}:`, err.message);
+    logger.warn(`[telegram] notify failed for ${telegramId}:`, err.message);
   }
 };
 

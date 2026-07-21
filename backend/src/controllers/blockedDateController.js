@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -62,7 +63,7 @@ export const getBlockedDates = async (req, res) => {
 
     res.json({ blockedDates: Array.from(blockedSet).sort() });
   } catch (error) {
-    console.error('getBlockedDates error:', error);
+    logger.error('getBlockedDates error:', error);
     res.status(500).json({ error: 'Ошибка получения заблокированных дат' });
   }
 };
@@ -120,7 +121,7 @@ export const getOccupancyCalendar = async (req, res) => {
 
     res.json({ manualDates, bookingDates, bookingRanges });
   } catch (error) {
-    console.error('getOccupancyCalendar error:', error);
+    logger.error('getOccupancyCalendar error:', error);
     res.status(500).json({ error: 'Ошибка получения календаря' });
   }
 };
@@ -165,7 +166,7 @@ export const addBlockedDates = async (req, res) => {
 
     res.json({ message: `Заблокировано дат: ${added}`, total: added });
   } catch (error) {
-    console.error('addBlockedDates error:', error);
+    logger.error('addBlockedDates error:', error);
     res.status(500).json({ error: 'Ошибка блокировки дат' });
   }
 };
@@ -204,7 +205,7 @@ export const removeBlockedDates = async (req, res) => {
 
     res.json({ message: `Разблокировано дат: ${count}`, count });
   } catch (error) {
-    console.error('removeBlockedDates error:', error);
+    logger.error('removeBlockedDates error:', error);
     res.status(500).json({ error: 'Ошибка разблокировки дат' });
   }
 };

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 import {
   generateUsersReport,
   generateBookingsReport,
@@ -45,7 +46,7 @@ export const adminUsersReport = async (req, res) => {
     const doc = generateUsersReport(users, { totalUsers, landlords, bannedUsers, newUsers7d });
     pipeDoc(doc, res, `domrent-users-${Date.now()}.pdf`);
   } catch (error) {
-    console.error('adminUsersReport error:', error);
+    logger.error('adminUsersReport error:', error);
     res.status(500).json({ error: 'Ошибка генерации отчёта' });
   }
 };
@@ -74,7 +75,7 @@ export const adminBookingsReport = async (req, res) => {
     });
     pipeDoc(doc, res, `domrent-bookings-${Date.now()}.pdf`);
   } catch (error) {
-    console.error('adminBookingsReport error:', error);
+    logger.error('adminBookingsReport error:', error);
     res.status(500).json({ error: 'Ошибка генерации отчёта' });
   }
 };
@@ -94,7 +95,7 @@ export const adminPropertiesReport = async (req, res) => {
     const doc = generatePropertiesReport(properties);
     pipeDoc(doc, res, `domrent-properties-${Date.now()}.pdf`);
   } catch (error) {
-    console.error('adminPropertiesReport error:', error);
+    logger.error('adminPropertiesReport error:', error);
     res.status(500).json({ error: 'Ошибка генерации отчёта' });
   }
 };
@@ -133,7 +134,7 @@ export const adminRevenueReport = async (req, res) => {
     const doc = generateRevenueReport(monthlyData, aggr._sum.totalPrice || 0);
     pipeDoc(doc, res, `domrent-revenue-${Date.now()}.pdf`);
   } catch (error) {
-    console.error('adminRevenueReport error:', error);
+    logger.error('adminRevenueReport error:', error);
     res.status(500).json({ error: 'Ошибка генерации отчёта' });
   }
 };
@@ -181,7 +182,7 @@ export const landlordPropertiesReport = async (req, res) => {
     const doc = generateLandlordReport(propertiesStats, summary);
     pipeDoc(doc, res, `domrent-my-properties-${Date.now()}.pdf`);
   } catch (error) {
-    console.error('landlordPropertiesReport error:', error);
+    logger.error('landlordPropertiesReport error:', error);
     res.status(500).json({ error: 'Ошибка генерации отчёта' });
   }
 };
@@ -213,7 +214,7 @@ export const landlordBookingsReport = async (req, res) => {
     });
     pipeDoc(doc, res, `domrent-my-bookings-${Date.now()}.pdf`);
   } catch (error) {
-    console.error('landlordBookingsReport error:', error);
+    logger.error('landlordBookingsReport error:', error);
     res.status(500).json({ error: 'Ошибка генерации отчёта' });
   }
 };

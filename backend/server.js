@@ -1,9 +1,19 @@
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import pinoHttp from 'pino-http';
+import swaggerUi from 'swagger-ui-express';
+import { load as loadYaml } from 'js-yaml';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import logger, { pinoLogger } from './src/config/logger.js';
+import { scheduleTokenCleanup } from './src/jobs/cleanupTokens.js';
+import { schedulePriceSnapshot, captureSnapshotNow } from './src/jobs/priceSnapshot.js';
 import authRoutes from './src/routes/auth.js';
 import propertyRoutes from './src/routes/property.js';
 import bookingRoutes from './src/routes/booking.js';
@@ -17,17 +27,39 @@ import adminRoutes from './src/routes/admin.js';
 import telegramRoutes from './src/routes/telegram.js';
 import landlordRoutes from './src/routes/landlord.js';
 import reportRoutes from './src/routes/report.js';
+import statsRoutes from './src/routes/stats.js';
 
 dotenv.config();
 
-console.log(`[boot] PORT=${process.env.PORT} NODE_ENV=${process.env.NODE_ENV} FRONTEND_URL=${process.env.FRONTEND_URL}`);
-console.log(`[boot] DATABASE_URL set: ${!!process.env.DATABASE_URL} JWT_SECRET set: ${!!process.env.JWT_SECRET}`);
+logger.info(`[boot] PORT=${process.env.PORT} NODE_ENV=${process.env.NODE_ENV} FRONTEND_URL=${process.env.FRONTEND_URL}`);
+logger.info(`[boot] DATABASE_URL set: ${!!process.env.DATABASE_URL} JWT_SECRET set: ${!!process.env.JWT_SECRET}`);
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const openapiDocument = loadYaml(fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf8'));
 
 const app = express();
 const prisma = new PrismaClient();
 
 app.set('trust proxy', 1);
-app.use(helmet());
+
+// Helmet везде, кроме /api-docs — Swagger UI использует инлайн-скрипт для инициализации,
+// который блокируется дефолтным CSP (script-src 'self'). Остальному API инлайн-скрипты не нужны.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api-docs')) return next();
+  return helmet()(req, res, next);
+});
+
+// Request-id + структурированные access-логи. req.log — child-логгер с привязанным request-id,
+// доступен в контроллерах/middleware для корреляции логов одного запроса.
+app.use(pinoHttp({
+  logger: pinoLogger,
+  genReqId: (req, res) => {
+    const existing = req.headers['x-request-id'];
+    const id = (Array.isArray(existing) ? existing[0] : existing) || crypto.randomUUID();
+    res.setHeader('X-Request-Id', id);
+    return id;
+  },
+}));
 
 // Rate limiting: auth endpoints — 10 попыток / 15 мин
 const authLimiter = rateLimit({
@@ -51,6 +83,7 @@ app.use('/api', globalLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/resend-verification', authLimiter);
 
 // Допустимые origins: localhost + все URL из FRONTEND_URL (через запятую)
 // Пример .env: FRONTEND_URL=https://domrent.vercel.app,https://www.domrent.kz
@@ -76,6 +109,14 @@ app.use(express.json());
 // Health check (no auth, no DB)
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
+// OpenAPI/Swagger docs — держите openapi.yaml в синхроне с роутами при изменениях API
+app.use(
+  '/api-docs',
+  helmet({ contentSecurityPolicy: false }),
+  swaggerUi.serve,
+  swaggerUi.setup(openapiDocument, { customSiteTitle: 'DomRent API Docs' })
+);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
@@ -90,30 +131,34 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/telegram', telegramRoutes);
 app.use('/api/landlord', landlordRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  (req.log || logger).error(err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 5000;
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[crash] Unhandled rejection:', reason);
+  logger.error('[crash] Unhandled rejection:', reason);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('[crash] Uncaught exception:', err.message, err.stack);
+  logger.error('[crash] Uncaught exception:', err.message, err.stack);
   process.exit(1);
 });
 
 const start = () => {
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
+    scheduleTokenCleanup();
+    schedulePriceSnapshot();
+    captureSnapshotNow(); // разовый снимок сразу — чтобы график истории не был пустым до 03:00
     prisma.$connect()
-      .then(() => console.log('Connected to database'))
-      .catch((e) => console.error('DB connect warning:', e.message));
+      .then(() => logger.info('Connected to database'))
+      .catch((e) => logger.error('DB connect warning:', e.message));
   });
 };
 

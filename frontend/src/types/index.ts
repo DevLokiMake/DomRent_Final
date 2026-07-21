@@ -54,6 +54,7 @@ export interface User {
   phone: string | null;
   role: 'USER' | 'LANDLORD' | 'ADMIN';
   isBanned?: boolean;
+  isEmailVerified?: boolean;
   telegramId: string | null;
 }
 
@@ -61,6 +62,12 @@ export interface AuthResponse {
   message: string;
   user: User;
   token: string;
+}
+
+// Ответ на регистрацию: аккаунт создан, но токен не выдаётся до подтверждения email
+export interface RegisterResponse {
+  message: string;
+  email: string;
 }
 
 export interface Booking {

@@ -1,12 +1,37 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, Check, Loader, User, Send } from "lucide-react";
+import { Camera, Check, Loader, User, Send, CalendarCheck, Moon, Wallet, MapPin, Star, Heart } from "lucide-react";
 import axiosInstance from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+
+interface MyStats {
+  totalBookings: number;
+  totalNights: number;
+  totalSpent: number;
+  favoriteCity: string | null;
+  reviewsWritten: number;
+  favoritesCount: number;
+}
 
 const ProfilePage = () => {
   const { t } = useTranslation();
   const { user, login } = useAuth();
+
+  const [stats, setStats] = useState<MyStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await axiosInstance.get("/stats/my");
+        setStats(res.data);
+      } catch {
+        // тихо игнорируем — статистика необязательный виджет
+      } finally {
+        setStatsLoading(false);
+      }
+    })();
+  }, []);
 
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState((user as any)?.phone || "");
@@ -131,6 +156,52 @@ const ProfilePage = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* My stats */}
+        <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-card border border-gray-100 dark:border-gray-800 mb-5">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('profile.stats.title')}</p>
+
+          {statsLoading ? (
+            <div className="flex justify-center py-6"><Loader className="w-5 h-5 animate-spin text-gray-400" /></div>
+          ) : !stats || stats.totalBookings === 0 ? (
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t('profile.stats.empty')}</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5">
+                <CalendarCheck className="w-4 h-4 text-brand-500 mb-1.5" />
+                <p className="text-lg font-black text-gray-900 dark:text-white">{stats.totalBookings}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.stats.totalBookings')}</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5">
+                <Moon className="w-4 h-4 text-indigo-500 mb-1.5" />
+                <p className="text-lg font-black text-gray-900 dark:text-white">{stats.totalNights}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.stats.totalNights')}</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5">
+                <Wallet className="w-4 h-4 text-emerald-500 mb-1.5" />
+                <p className="text-lg font-black text-gray-900 dark:text-white">{stats.totalSpent.toLocaleString()} ₸</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.stats.totalSpent')}</p>
+              </div>
+              {stats.favoriteCity && (
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5">
+                  <MapPin className="w-4 h-4 text-rose-500 mb-1.5" />
+                  <p className="text-lg font-black text-gray-900 dark:text-white">{stats.favoriteCity}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.stats.favoriteCity')}</p>
+                </div>
+              )}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5">
+                <Star className="w-4 h-4 text-amber-500 mb-1.5" />
+                <p className="text-lg font-black text-gray-900 dark:text-white">{stats.reviewsWritten}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.stats.reviewsWritten')}</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5">
+                <Heart className="w-4 h-4 text-pink-500 mb-1.5" />
+                <p className="text-lg font-black text-gray-900 dark:text-white">{stats.favoritesCount}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.stats.favoritesCount')}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Telegram linking */}

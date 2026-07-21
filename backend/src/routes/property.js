@@ -17,7 +17,8 @@ import {
   getOccupancyCalendar,
 } from '../controllers/blockedDateController.js';
 import { authenticateToken } from '../middlewares/auth.js';
-import { validate, propertySchema, updatePropertySchema } from '../middlewares/validate.js';
+import { requireLandlord } from '../middlewares/requireRole.js';
+import { validate, propertySchema, updatePropertySchema, blockedDatesSchema, unblockDatesSchema } from '../middlewares/validate.js';
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ const optionalAuth = async (req, res, next) => {
 };
 
 // POST /api/properties — Создание (только LANDLORD/ADMIN)
-router.post('/', authenticateToken, validate(propertySchema), createProperty);
+router.post('/', authenticateToken, requireLandlord, validate(propertySchema), createProperty);
 
 // GET /api/properties — Все объекты с фильтрацией (публичный)
 router.get('/', getAllProperties);
@@ -66,8 +67,8 @@ router.get('/:id/blocked-dates', getBlockedDates);
 // GET  /api/properties/:id/occupancy — детальный календарь (только владелец/admin)
 router.get('/:id/occupancy', authenticateToken, getOccupancyCalendar);
 // POST /api/properties/:id/blocked-dates — ручная блокировка (владелец/admin)
-router.post('/:id/blocked-dates', authenticateToken, addBlockedDates);
+router.post('/:id/blocked-dates', authenticateToken, validate(blockedDatesSchema), addBlockedDates);
 // DELETE /api/properties/:id/blocked-dates — снять блокировку (владелец/admin)
-router.delete('/:id/blocked-dates', authenticateToken, removeBlockedDates);
+router.delete('/:id/blocked-dates', authenticateToken, validate(unblockDatesSchema), removeBlockedDates);
 
 export default router;

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -128,7 +129,7 @@ export const getLandlordStatistics = async (req, res) => {
       monthlyChart,
     });
   } catch (error) {
-    console.error('getLandlordStatistics error:', error);
+    logger.error('getLandlordStatistics error:', error);
     res.status(500).json({ error: 'Ошибка получения статистики' });
   }
 };

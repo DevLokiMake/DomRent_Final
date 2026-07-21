@@ -15,6 +15,7 @@ import {
 } from '../controllers/adminController.js';
 import { authenticateToken } from '../middlewares/auth.js';
 import { requireAdmin } from '../middlewares/requireRole.js';
+import { validate, banUserSchema, changeRoleSchema } from '../middlewares/validate.js';
 
 const router = express.Router();
 
@@ -27,8 +28,8 @@ router.get('/analytics', getAnalytics);
 
 // Пользователи
 router.get('/users', getUsers);
-router.patch('/users/:id/ban', toggleUserBan);
-router.patch('/users/:id/role', changeUserRole);
+router.patch('/users/:id/ban', validate(banUserSchema), toggleUserBan);
+router.patch('/users/:id/role', validate(changeRoleSchema), changeUserRole);
 
 // Модерация объявлений
 router.get('/properties', getPropertiesAdmin);

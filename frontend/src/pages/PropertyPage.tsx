@@ -724,44 +724,64 @@ const PropertyPage = () => {
         </div>
       </div>
 
-      {/* ── Похожие объекты ─────────────────────────────────────────────────── */}
-      {similarProperties.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 pb-16">
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-5 h-5 text-brand-500" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Похожие объекты</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {similarProperties.map(p => {
-              const img = p.coverImage || p.images?.[0];
-              const city = typeof p.city === "object" && p.city ? p.city.name : p.city;
-              const price = p.contractType === "RENT" ? `${p.price.toLocaleString()} ₸/ночь` : `${p.price.toLocaleString()} ₸`;
-              return (
-                <Link key={p.id} to={`/property/${p.id}`}
-                  className="group bg-white dark:bg-gray-900 rounded-3xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-800 block"
-                >
-                  <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                    {img
-                      ? <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      : <div className="w-full h-full flex items-center justify-center"><MapPin className="w-8 h-8 text-gray-300 dark:text-gray-600" /></div>
-                    }
-                    <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full text-xs font-bold text-gray-700 dark:text-gray-200 capitalize">
-                      {p.type}
+      {/* ── Похожие объекты (дешевле — сначала) ─────────────────────────────── */}
+      {similarProperties.length > 0 && (() => {
+        const currentPrice = property?.price ?? Infinity;
+        const sorted = [...similarProperties].sort((a, b) => a.price - b.price);
+        const cheaperCount = sorted.filter(p => p.price < currentPrice).length;
+
+        return (
+          <div className="max-w-7xl mx-auto px-4 pb-16">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-5 h-5 text-brand-500" />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {cheaperCount > 0 ? "Похожие, но дешевле" : "Похожие объекты"}
+              </h2>
+            </div>
+            {cheaperCount > 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+                Нашли {cheaperCount === 1 ? "1 похожий вариант" : `${cheaperCount} похожих варианта`} дешевле этого объекта
+              </p>
+            )}
+            <div className={cheaperCount === 0 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-5" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"}>
+              {sorted.map(p => {
+                const img = p.coverImage || p.images?.[0];
+                const city = typeof p.city === "object" && p.city ? p.city.name : p.city;
+                const price = p.contractType === "RENT" ? `${p.price.toLocaleString()} ₸/ночь` : `${p.price.toLocaleString()} ₸`;
+                const isCheaper = p.price < currentPrice;
+                const discountPct = isCheaper ? Math.round((1 - p.price / currentPrice) * 100) : 0;
+                return (
+                  <Link key={p.id} to={`/property/${p.id}`}
+                    className="group bg-white dark:bg-gray-900 rounded-3xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-800 block"
+                  >
+                    <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                      {img
+                        ? <img src={img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        : <div className="w-full h-full flex items-center justify-center"><MapPin className="w-8 h-8 text-gray-300 dark:text-gray-600" /></div>
+                      }
+                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full text-xs font-bold text-gray-700 dark:text-gray-200 capitalize">
+                        {p.type}
+                      </div>
+                      {isCheaper && discountPct > 0 && (
+                        <div className="absolute top-3 right-3 px-2.5 py-1 bg-emerald-500 rounded-full text-xs font-bold text-white shadow-sm">
+                          -{discountPct}%
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 mb-1 group-hover:text-brand-500 transition-colors">{p.title}</h3>
-                    <div className="flex items-center gap-1 text-gray-400 text-xs mb-2">
-                      <MapPin className="w-3 h-3 flex-shrink-0" /><span className="line-clamp-1">{city}</span>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 mb-1 group-hover:text-brand-500 transition-colors">{p.title}</h3>
+                      <div className="flex items-center gap-1 text-gray-400 text-xs mb-2">
+                        <MapPin className="w-3 h-3 flex-shrink-0" /><span className="line-clamp-1">{city}</span>
+                      </div>
+                      <p className={`font-bold text-sm ${isCheaper ? "text-emerald-600 dark:text-emerald-400" : "text-gray-900 dark:text-white"}`}>{price}</p>
                     </div>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm">{price}</p>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

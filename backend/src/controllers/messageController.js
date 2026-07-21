@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController.js';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -43,7 +44,7 @@ export const getMessages = async (req, res) => {
 
     res.json({ bookingId, messages });
   } catch (error) {
-    console.error('getMessages error:', error);
+    logger.error('getMessages error:', error);
     res.status(500).json({ error: 'Ошибка при получении сообщений' });
   }
 };
@@ -99,7 +100,7 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json({ message });
   } catch (error) {
-    console.error('sendMessage error:', error);
+    logger.error('sendMessage error:', error);
     res.status(500).json({ error: 'Ошибка при отправке сообщения' });
   }
 };
@@ -138,7 +139,7 @@ export const getChatList = async (req, res) => {
 
     res.json({ count: bookings.length, chats: bookings });
   } catch (error) {
-    console.error('getChatList error:', error);
+    logger.error('getChatList error:', error);
     res.status(500).json({ error: 'Ошибка при получении чатов' });
   }
 };

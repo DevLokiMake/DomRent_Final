@@ -13,6 +13,8 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -21,6 +23,7 @@ const LoginPage = () => {
     if (loading) return;
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
     try {
       const response = await api.post<AuthResponse>('/auth/login', {
         email: formData.email.trim(),
@@ -29,10 +32,22 @@ const LoginPage = () => {
       login(response.data.user, response.data.token);
       navigate(location.state?.from || '/', { replace: true });
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { error?: string } } };
+      const axiosError = err as { response?: { data?: { error?: string; code?: string } } };
       setError(axiosError.response?.data?.error || 'Неверный email или пароль');
+      setNeedsVerification(axiosError.response?.data?.code === 'EMAIL_NOT_VERIFIED');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendState === 'sending' || !formData.email.trim()) return;
+    setResendState('sending');
+    try {
+      await api.post('/auth/resend-verification', { email: formData.email.trim() });
+      setResendState('sent');
+    } catch {
+      setResendState('idle');
     }
   };
 
@@ -96,6 +111,18 @@ const LoginPage = () => {
           {error && (
             <div className="mb-5 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl">
               <p className="text-red-600 dark:text-red-400 text-sm font-medium">{error}</p>
+              {needsVerification && (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendState !== 'idle'}
+                  className="mt-2 text-sm font-semibold text-red-700 dark:text-red-300 underline disabled:opacity-50"
+                >
+                  {resendState === 'sending' && 'Отправляем...'}
+                  {resendState === 'sent' && 'Письмо отправлено повторно'}
+                  {resendState === 'idle' && 'Отправить письмо ещё раз'}
+                </button>
+              )}
             </div>
           )}
 

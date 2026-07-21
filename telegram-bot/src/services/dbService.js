@@ -1,4 +1,5 @@
 import { pool } from '../db.js';
+import { encrypt, decrypt, looksEncrypted } from '../utils/crypto.js';
 
 // ── Sessions ────────────────────────────────────────────────────────────────
 
@@ -7,16 +8,26 @@ export const getSession = async (telegramId) => {
     'SELECT * FROM bot_sessions WHERE telegram_id = $1',
     [telegramId]
   );
-  return rows[0] || null;
+  const session = rows[0];
+  if (!session) return null;
+
+  if (session.access_token && looksEncrypted(session.access_token)) {
+    session.access_token = decrypt(session.access_token);
+  }
+  // Иначе — запись из старой версии (до включения шифрования), токен ещё в открытом виде.
+  // Будет перешифрован при следующем saveSession (повторный /start или обновление токена).
+
+  return session;
 };
 
 export const saveSession = async ({ telegramId, userId, accessToken, firstName, username, role }) => {
+  const encryptedToken = encrypt(accessToken);
   await pool.query(`
     INSERT INTO bot_sessions (telegram_id, user_id, access_token, first_name, username, role, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, NOW())
     ON CONFLICT (telegram_id) DO UPDATE
       SET user_id = $2, access_token = $3, first_name = $4, username = $5, role = $6, updated_at = NOW()
-  `, [telegramId, userId, accessToken, firstName, username, role || 'USER']);
+  `, [telegramId, userId, encryptedToken, firstName, username, role || 'USER']);
 };
 
 export const deleteSession = async (telegramId) => {

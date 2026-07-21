@@ -29,6 +29,75 @@ interface RecentItem {
   contractType: string; image: string | null; city: string;
 }
 
+// ── Map price rating (как на Krisha.kz) ────────────────────────────────────────
+// Цвет метки = цена относительно средней по группе (город + тип сделки + тип жилья):
+// зелёный — дешевле рынка, жёлтый — по рынку, красный — дороже рынка.
+type Rating = 'green' | 'yellow' | 'red';
+
+const RATING_COLORS: Record<Rating, string> = {
+  green: '#16a34a',
+  yellow: '#eab308',
+  red: '#dc2626',
+};
+
+const RATING_LABELS: Record<Rating, string> = {
+  green: 'Ниже рынка',
+  yellow: 'По рынку',
+  red: 'Выше рынка',
+};
+
+const getGroupKey = (p: Property) => {
+  const cityId = typeof p.city === 'object' && p.city ? p.city.id : p.cityId;
+  return `${cityId ?? 'unknown'}:${p.contractType ?? 'RENT'}:${p.type}`;
+};
+
+const computeRatings = (properties: Property[]): globalThis.Map<number, Rating> => {
+  const groups = new globalThis.Map<string, number[]>();
+  properties.forEach(p => {
+    const key = getGroupKey(p);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(p.price);
+  });
+
+  const overallByContract: Record<string, number> = {};
+  ['RENT', 'SALE'].forEach(ct => {
+    const prices = properties.filter(p => (p.contractType ?? 'RENT') === ct).map(p => p.price);
+    if (prices.length) overallByContract[ct] = prices.reduce((a, b) => a + b, 0) / prices.length;
+  });
+
+  const ratings = new globalThis.Map<number, Rating>();
+  properties.forEach(p => {
+    const key = getGroupKey(p);
+    const group = groups.get(key) ?? [];
+    // Группа слишком маленькая — сравниваем со средней по всем объектам того же типа сделки
+    const sample = group.length >= 3 ? group : properties
+      .filter(x => (x.contractType ?? 'RENT') === (p.contractType ?? 'RENT'))
+      .map(x => x.price);
+    const avg = sample.length
+      ? sample.reduce((a, b) => a + b, 0) / sample.length
+      : overallByContract[p.contractType ?? 'RENT'] ?? p.price;
+
+    let rating: Rating = 'yellow';
+    if (p.price <= avg * 0.85) rating = 'green';
+    else if (p.price >= avg * 1.15) rating = 'red';
+    ratings.set(p.id, rating);
+  });
+
+  return ratings;
+};
+
+// Формат цены как на Krisha.kz: крупные суммы — в млн/тыс
+const formatMapPrice = (price: number): { main: string; unit: string } => {
+  if (price >= 1_000_000) {
+    const millions = price / 1_000_000;
+    return { main: (millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)), unit: 'млн ₸' };
+  }
+  if (price >= 1000) {
+    return { main: Math.round(price / 1000).toString(), unit: 'тыс ₸' };
+  }
+  return { main: price.toString(), unit: '₸' };
+};
+
 // ── Map View ──────────────────────────────────────────────────────────────────
 const MapView = ({ properties }: { properties: Property[] }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,23 +124,40 @@ const MapView = ({ properties }: { properties: Property[] }) => {
 
     const withCoords = properties.filter(p => p.latitude && p.longitude);
     const bounds: L.LatLngTuple[] = [];
+    const ratings = computeRatings(properties);
 
     withCoords.forEach(p => {
-      const price = `${p.price.toLocaleString('ru')} ₸${p.contractType === 'RENT' ? '/н' : ''}`;
+      const isSale = p.contractType === 'SALE';
+      const rating = ratings.get(p.id) ?? 'yellow';
+      const color = RATING_COLORS[rating];
+      const { main, unit } = formatMapPrice(p.price);
+      const shape = isSale ? '50%' : '14px'; // круг — продажа, квадрат со скруглением — аренда
+
       const icon = L.divIcon({
-        html: `<div style="background:#111827;color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);border:2px solid #fff;cursor:pointer">${price}</div>`,
+        html: `
+          <div style="
+            width:54px;height:54px;border-radius:${shape};background:${color};
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            color:#fff;box-shadow:0 3px 10px rgba(0,0,0,0.3);border:2.5px solid #fff;
+            cursor:pointer;line-height:1.05;font-family:Inter,system-ui,sans-serif;
+          ">
+            <span style="font-size:13px;font-weight:800">${main}</span>
+            <span style="font-size:8px;font-weight:700;opacity:0.9">${unit}${isSale ? '' : '/н'}</span>
+          </div>`,
         className: '',
-        iconSize: [110, 28],
-        iconAnchor: [55, 28],
+        iconSize: [54, 54],
+        iconAnchor: [27, 27],
       });
+
       const img = p.coverImage || p.images?.[0];
       const city = typeof p.city === 'object' && p.city ? p.city.name : (p.city as string) || '';
       const popup = `
         <div style="min-width:200px;font-family:Inter,system-ui,sans-serif">
           ${img ? `<img src="${img}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:8px">` : ''}
           <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:2px">${p.title}</div>
-          <div style="color:#6b7280;font-size:12px;margin-bottom:6px">${city}</div>
-          <div style="font-weight:800;font-size:15px;color:#f43f5e;margin-bottom:10px">${p.price.toLocaleString('ru')} ₸${p.contractType === 'RENT' ? '/ночь' : ''}</div>
+          <div style="color:#6b7280;font-size:12px;margin-bottom:6px">${city} · ${isSale ? 'Продажа' : 'Аренда'}</div>
+          <div style="font-weight:800;font-size:15px;color:#f43f5e;margin-bottom:4px">${p.price.toLocaleString('ru')} ₸${isSale ? '' : '/ночь'}</div>
+          <div style="display:inline-block;font-size:11px;font-weight:700;color:#fff;background:${color};padding:2px 8px;border-radius:8px;margin-bottom:10px">${RATING_LABELS[rating]}</div>
           <a href="/property/${p.id}" style="display:block;padding:8px;background:#111827;color:#fff;text-align:center;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none">Посмотреть →</a>
         </div>`;
       const marker = L.marker([p.latitude!, p.longitude!], { icon }).addTo(map);
@@ -88,6 +174,18 @@ const MapView = ({ properties }: { properties: Property[] }) => {
 
   return (
     <div className="relative rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-card">
+      {/* Легенда: форма = тип сделки, цвет = цена относительно рынка */}
+      <div className="absolute left-3 bottom-3 z-[400] bg-white/95 dark:bg-gray-900/95 backdrop-blur rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 px-3.5 py-2.5 text-xs space-y-2">
+        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+          <span className="w-3.5 h-3.5 rounded-full bg-gray-400 flex-shrink-0" /> Продажа
+          <span className="w-3.5 h-3.5 rounded-[3px] bg-gray-400 flex-shrink-0 ml-2" /> Аренда
+        </div>
+        <div className="flex items-center gap-2.5 text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: RATING_COLORS.green }} />ниже рынка</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: RATING_COLORS.yellow }} />по рынку</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: RATING_COLORS.red }} />выше рынка</span>
+        </div>
+      </div>
       {properties.filter(p => p.latitude && p.longitude).length === 0 && (
         <div className="absolute inset-0 z-[500] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 pointer-events-none">
           <div className="text-center">

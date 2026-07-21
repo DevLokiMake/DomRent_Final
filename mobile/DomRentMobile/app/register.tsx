@@ -34,8 +34,8 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
+    if (password.length < 8 || !/[A-Za-zА-Яа-яЁё]/.test(password) || !/[0-9]/.test(password)) {
+      Alert.alert('Ошибка', 'Пароль должен быть не менее 8 символов и содержать буквы и цифры');
       return;
     }
 
@@ -45,9 +45,17 @@ export default function RegisterScreen() {
     }
 
     try {
-      await signup(email, password, name, role);
-      // После успешной регистрации переходим на главный экран
-      router.replace('/(tabs)');
+      const { requiresVerification } = await signup(email, password, name, role);
+      if (requiresVerification) {
+        // Аккаунт создан, но требует подтверждения email по ссылке из письма — входа пока нет
+        Alert.alert(
+          'Проверьте почту',
+          `Мы отправили письмо на ${email.trim()}. Перейдите по ссылке в письме, чтобы подтвердить email, затем войдите в аккаунт.`,
+          [{ text: 'Понятно', onPress: () => router.replace('/login') }]
+        );
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка регистрации';
       Alert.alert('Ошибка регистрации', errorMessage);
@@ -104,7 +112,7 @@ export default function RegisterScreen() {
             <ThemedText style={styles.label}>Пароль</ThemedText>
             <TextInput
               style={[styles.input, { backgroundColor: C.inputBg, borderColor: C.inputBorder, color: C.inputText }]}
-              placeholder="Минимум 6 символов"
+              placeholder="Минимум 8 символов, буквы и цифры"
               placeholderTextColor="#999"
               secureTextEntry
               editable={!isLoading}

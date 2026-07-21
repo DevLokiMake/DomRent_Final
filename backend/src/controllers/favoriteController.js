@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -99,7 +100,7 @@ export const toggleFavorite = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Toggle favorite error:', error);
+    logger.error('Toggle favorite error:', error);
     res.status(500).json({ error: 'Ошибка при обновлении избранного' });
   }
 };
@@ -156,7 +157,7 @@ export const getMyFavorites = async (req, res) => {
       favorites: properties
     });
   } catch (error) {
-    console.error('Get my favorites error:', error);
+    logger.error('Get my favorites error:', error);
     res.status(500).json({ error: 'Ошибка при получении избранного' });
   }
 };
@@ -191,7 +192,7 @@ export const isFavorited = async (req, res) => {
       isFavorited: !!favorite
     });
   } catch (error) {
-    console.error('Is favorited error:', error);
+    logger.error('Is favorited error:', error);
     res.status(500).json({ error: 'Ошибка при проверке избранного' });
   }
 };

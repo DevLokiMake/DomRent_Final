@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
   Loader, AlertCircle, Trash2, Phone, Mail,
   MapPin, Calendar, MessageSquare, Star, Home,
-  ChevronLeft, ChevronRight, Lock, Unlock, Check, X,
+  ChevronLeft, ChevronRight, Lock, Unlock, Check, X, CalendarPlus,
 } from "lucide-react";
 import axiosInstance from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { downloadBookingICS } from "../utils/ics";
 type BookingStatus = "PENDING" | "UPCOMING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 interface BookingWithProperty {
@@ -316,6 +317,21 @@ const BookingsPage = () => {
             >
               <MessageSquare className="w-4 h-4" />
               Чат
+            </button>
+
+            <button
+              onClick={() => downloadBookingICS({
+                id: booking.id,
+                title: booking.property?.title || "Бронирование DomRent",
+                city: getCityName(booking.property?.city),
+                startDate: booking.startDate,
+                endDate: booking.endDate,
+              })}
+              className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition"
+              title="Добавить в календарь (.ics)"
+            >
+              <CalendarPlus className="w-4 h-4" />
+              В календарь
             </button>
 
             {canReview && (

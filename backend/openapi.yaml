@@ -1,0 +1,1051 @@
+openapi: 3.0.3
+info:
+  title: DomRent API
+  description: >
+    API маркетплейса аренды/продажи недвижимости DomRent.
+    Спецификация покрывает основные ресурсы; при добавлении новых эндпоинтов
+    обновляйте этот файл вместе с кодом, чтобы документация не расходилась с реальностью.
+  version: "1.0.0"
+servers:
+  - url: /api
+tags:
+  - name: Auth
+  - name: Properties
+  - name: Bookings
+  - name: Favorites
+  - name: Cities
+  - name: Reviews
+  - name: Messages
+  - name: Notifications
+  - name: Upload
+  - name: Admin
+  - name: Landlord
+  - name: Reports
+  - name: Telegram
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              message: { type: string }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        name: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        avatar: { type: string, nullable: true }
+        role: { type: string, enum: [USER, LANDLORD, ADMIN] }
+        isBanned: { type: boolean }
+        isEmailVerified: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    AuthResponse:
+      type: object
+      properties:
+        message: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+        token: { type: string }
+
+    Property:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        type: { type: string, enum: [квартира, дом, комната] }
+        contractType: { type: string, enum: [RENT, SALE] }
+        cityId: { type: integer }
+        images: { type: array, items: { type: string } }
+        coverImage: { type: string, nullable: true }
+        latitude: { type: number, nullable: true }
+        longitude: { type: number, nullable: true }
+        rooms: { type: integer, nullable: true }
+        hasWifi: { type: boolean }
+        hasParking: { type: boolean }
+        petsAllowed: { type: boolean }
+        status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+        ownerId: { type: integer }
+        viewCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Booking:
+      type: object
+      properties:
+        id: { type: integer }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        totalPrice: { type: number }
+        status: { type: string, enum: [PENDING, UPCOMING, ACTIVE, COMPLETED, CANCELLED] }
+        userId: { type: integer }
+        propertyId: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Favorite:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        propertyId: { type: integer }
+
+    Review:
+      type: object
+      properties:
+        id: { type: integer }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        isAnonymous: { type: boolean }
+        propertyId: { type: integer }
+        bookingId: { type: integer, nullable: true }
+        authorId: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Message:
+      type: object
+      properties:
+        id: { type: integer }
+        text: { type: string }
+        isRead: { type: boolean }
+        senderId: { type: integer }
+        bookingId: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string }
+        title: { type: string }
+        body: { type: string }
+        isRead: { type: boolean }
+        entityId: { type: integer, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+  responses:
+    Unauthorized:
+      description: Требуется авторизация (нет/невалиден Bearer-токен)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Доступ запрещён (недостаточно прав/роли)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Ошибка валидации входных данных
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация нового пользователя
+      description: >
+        Создаёт аккаунт и отправляет письмо для подтверждения email.
+        Токен не выдаётся — вход возможен только после подтверждения (см. /auth/verify-email).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8, description: "Минимум 8 символов, буква и цифра" }
+                name: { type: string }
+                phone: { type: string }
+                role: { type: string, enum: [USER, LANDLORD], default: USER }
+      responses:
+        '201':
+          description: Аккаунт создан, письмо отправлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  email: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход по email/паролю
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403':
+          description: Аккаунт заблокирован или email не подтверждён (code EMAIL_NOT_VERIFIED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выйти из системы (отзывает текущий JWT по jti)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Подтвердить email по токену из письма
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        '200':
+          description: Email подтверждён, выдан токен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Повторно отправить письмо подтверждения email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: >
+            Универсальный ответ независимо от того, существует ли аккаунт
+            (не раскрывает наличие email в системе)
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Профиль текущего пользователя
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Auth]
+      summary: Обновить профиль (name/phone/avatar)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                phone: { type: string }
+                avatar: { type: string }
+      responses:
+        '200':
+          description: Профиль обновлён
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Запросить ссылку сброса пароля
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200': { description: Универсальный ответ (не раскрывает наличие email) }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Сбросить пароль по токену
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 6 }
+      responses:
+        '200': { description: Пароль изменён }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /properties:
+    get:
+      tags: [Properties]
+      summary: Список объектов (публичный, только APPROVED)
+      parameters:
+        - { name: city, in: query, schema: { type: string } }
+        - { name: cityId, in: query, schema: { type: integer } }
+        - { name: minPrice, in: query, schema: { type: number } }
+        - { name: maxPrice, in: query, schema: { type: number } }
+        - { name: type, in: query, schema: { type: string } }
+        - { name: contractType, in: query, schema: { type: string, enum: [RENT, SALE] } }
+        - { name: rooms, in: query, schema: { type: integer } }
+        - { name: hasWifi, in: query, schema: { type: boolean } }
+        - { name: hasParking, in: query, schema: { type: boolean } }
+        - { name: petsAllowed, in: query, schema: { type: boolean } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                  properties:
+                    type: array
+                    items: { $ref: '#/components/schemas/Property' }
+    post:
+      tags: [Properties]
+      summary: Создать объект (только LANDLORD/ADMIN)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, description, price, type, contractType, city]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                price: { type: number }
+                type: { type: string, enum: [квартира, дом, комната] }
+                contractType: { type: string, enum: [RENT, SALE] }
+                city: { type: string }
+                images: { type: array, items: { type: string } }
+                coverImage: { type: string, nullable: true }
+                latitude: { type: number, nullable: true }
+                longitude: { type: number, nullable: true }
+                rooms: { type: integer, nullable: true }
+                hasWifi: { type: boolean }
+                hasParking: { type: boolean }
+                petsAllowed: { type: boolean }
+      responses:
+        '201': { description: Объект создан (статус PENDING до модерации) }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /properties/nearby:
+    get:
+      tags: [Properties]
+      summary: Объекты рядом с координатами
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number } }
+        - { name: lng, in: query, required: true, schema: { type: number } }
+        - { name: radiusKm, in: query, schema: { type: number } }
+      responses:
+        '200': { description: OK }
+
+  /properties/popular:
+    get:
+      tags: [Properties]
+      summary: Популярные объекты (по просмотрам/бронированиям)
+      responses:
+        '200': { description: OK }
+
+  /properties/my:
+    get:
+      tags: [Properties]
+      summary: Объекты текущего пользователя (владельца)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /properties/{id}:
+    get:
+      tags: [Properties]
+      summary: Объект по ID (опциональная авторизация — влияет на видимость PENDING/REJECTED)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  property: { $ref: '#/components/schemas/Property' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Properties]
+      summary: Обновить объект (владелец/admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Обновлено }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Properties]
+      summary: Удалить объект (владелец)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Удалено }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /properties/{id}/similar:
+    get:
+      tags: [Properties]
+      summary: Похожие объекты
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /properties/{id}/blocked-dates:
+    get:
+      tags: [Properties]
+      summary: Заблокированные даты объекта (публичный, для формы бронирования)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Properties]
+      summary: Вручную заблокировать даты (владелец/admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dates]
+              properties:
+                dates: { type: array, items: { type: string, format: date } }
+                reason: { type: string, default: manual }
+      responses:
+        '200': { description: Заблокировано }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Properties]
+      summary: Снять ручную блокировку дат (владелец/admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dates]
+              properties:
+                dates: { type: array, items: { type: string, format: date } }
+      responses:
+        '200': { description: Разблокировано }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /properties/{id}/occupancy:
+    get:
+      tags: [Properties]
+      summary: Детальный календарь занятости (владелец/admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Создать бронирование
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [propertyId, startDate, endDate]
+              properties:
+                propertyId: { type: integer }
+                startDate: { type: string, format: date-time }
+                endDate: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Создано (статус PENDING до подтверждения арендодателем)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  booking: { $ref: '#/components/schemas/Booking' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /bookings/my:
+    get:
+      tags: [Bookings]
+      summary: Бронирования текущего пользователя (арендатора)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /bookings/owner:
+    get:
+      tags: [Bookings]
+      summary: Бронирования по объектам текущего арендодателя
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /bookings/{id}:
+    get:
+      tags: [Bookings]
+      summary: Бронирование по ID
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Bookings]
+      summary: Отменить бронирование
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Отменено }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /bookings/{id}/confirm:
+    patch:
+      tags: [Bookings]
+      summary: Подтвердить бронирование (арендодатель)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Подтверждено }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /bookings/{id}/reject:
+    patch:
+      tags: [Bookings]
+      summary: Отклонить бронирование (арендодатель)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Отклонено }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /favorites/toggle/{propertyId}:
+    post:
+      tags: [Favorites]
+      summary: Добавить/удалить объект из избранного
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: propertyId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /favorites:
+    get:
+      tags: [Favorites]
+      summary: Список избранных объектов
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Property' }
+
+  /favorites/check/{propertyId}:
+    get:
+      tags: [Favorites]
+      summary: Проверить, в избранном ли объект
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: propertyId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /cities:
+    get:
+      tags: [Cities]
+      summary: Список городов
+      responses:
+        '200': { description: OK }
+
+  /reviews:
+    post:
+      tags: [Reviews]
+      summary: Оставить отзыв
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [propertyId, rating]
+              properties:
+                propertyId: { type: integer }
+                bookingId: { type: integer, nullable: true }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string }
+                isAnonymous: { type: boolean }
+      responses:
+        '201': { description: Отзыв создан }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /reviews/property/{propertyId}:
+    get:
+      tags: [Reviews]
+      summary: Отзывы по объекту (публичный)
+      parameters:
+        - { name: propertyId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /reviews/can-review/{propertyId}:
+    get:
+      tags: [Reviews]
+      summary: Может ли текущий пользователь оставить отзыв на объект
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: propertyId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /messages/chats:
+    get:
+      tags: [Messages]
+      summary: Список чатов текущего пользователя
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /messages/{bookingId}:
+    get:
+      tags: [Messages]
+      summary: История сообщений по бронированию
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: bookingId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Messages]
+      summary: Отправить сообщение
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: bookingId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 2000 }
+      responses:
+        '201': { description: Отправлено }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Список уведомлений текущего пользователя
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items: { $ref: '#/components/schemas/Notification' }
+
+  /notifications/push-token:
+    post:
+      tags: [Notifications]
+      summary: Сохранить Expo push-токен устройства
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        '200': { description: Сохранено }
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Отметить все уведомления прочитанными
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Отметить одно уведомление прочитанным
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /upload/images:
+    post:
+      tags: [Upload]
+      summary: Загрузить изображения (multipart/form-data, до 20 файлов, Cloudinary)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        '200': { description: Загружено }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/stats:
+    get:
+      tags: [Admin]
+      summary: Общая статистика (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/analytics:
+    get:
+      tags: [Admin]
+      summary: Аналитика (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Список пользователей (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/users/{id}/ban:
+    patch:
+      tags: [Admin]
+      summary: Забанить/разбанить пользователя (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [banned]
+              properties:
+                banned: { type: boolean }
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/users/{id}/role:
+    patch:
+      tags: [Admin]
+      summary: Изменить роль пользователя (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string, enum: [USER, LANDLORD, ADMIN] }
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/properties:
+    get:
+      tags: [Admin]
+      summary: Объекты для модерации (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [PENDING, APPROVED, REJECTED] } }
+        - { name: page, in: query, schema: { type: integer } }
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /admin/properties/{id}/approve:
+    patch:
+      tags: [Admin]
+      summary: Одобрить объект (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Одобрено }
+
+  /admin/properties/{id}/reject:
+    patch:
+      tags: [Admin]
+      summary: Отклонить объект с причиной (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Отклонено }
+
+  /admin/audit:
+    get:
+      tags: [Admin]
+      summary: Журнал действий администраторов (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/bookings:
+    get:
+      tags: [Admin]
+      summary: Все бронирования (просмотр, ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/reviews:
+    get:
+      tags: [Admin]
+      summary: Все отзывы (просмотр, ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /admin/reviews/{id}:
+    delete:
+      tags: [Admin]
+      summary: Удалить отзыв (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Удалено }
+
+  /landlord/statistics:
+    get:
+      tags: [Landlord]
+      summary: Статистика арендодателя (LANDLORD/ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /reports/admin/users:
+    get:
+      tags: [Reports]
+      summary: PDF-отчёт по пользователям (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: application/pdf }
+
+  /reports/admin/bookings:
+    get:
+      tags: [Reports]
+      summary: PDF-отчёт по бронированиям (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: application/pdf }
+
+  /reports/admin/properties:
+    get:
+      tags: [Reports]
+      summary: PDF-отчёт по объектам (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: application/pdf }
+
+  /reports/admin/revenue:
+    get:
+      tags: [Reports]
+      summary: PDF-отчёт по доходам (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: application/pdf }
+
+  /reports/landlord/properties:
+    get:
+      tags: [Reports]
+      summary: PDF-отчёт арендодателя по объектам (LANDLORD/ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: application/pdf }
+
+  /reports/landlord/bookings:
+    get:
+      tags: [Reports]
+      summary: PDF-отчёт арендодателя по бронированиям (LANDLORD/ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: application/pdf }
+
+  /stats/price-index:
+    get:
+      tags: [Reports]
+      summary: Текущая средняя цена по городам/типам сделки (публичный)
+      responses:
+        '200': { description: OK }
+
+  /stats/price-history:
+    get:
+      tags: [Reports]
+      summary: История снимков цен (публичный)
+      parameters:
+        - { name: cityId, in: query, schema: { type: integer } }
+        - { name: contractType, in: query, schema: { type: string, enum: [RENT, SALE] } }
+      responses:
+        '200': { description: OK }
+
+  /stats/my:
+    get:
+      tags: [Reports]
+      summary: Личная статистика текущего пользователя (бронирования, отзывы, избранное)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /telegram/generate-code:
+    get:
+      tags: [Telegram]
+      summary: Сгенерировать код для привязки Telegram-аккаунта
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+
+  /telegram/link:
+    post:
+      tags: [Telegram]
+      summary: Привязать Telegram-аккаунт по коду (вызывается ботом)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code: { type: string }
+                telegramId: { type: string }
+      responses:
+        '200': { description: Привязано }
+
+  /telegram/profile:
+    get:
+      tags: [Telegram]
+      summary: Данные привязанного Telegram-аккаунта
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }

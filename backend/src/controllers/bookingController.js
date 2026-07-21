@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { sendBookingNotification } from '../services/telegramService.js';
 import { createNotification } from './notificationController.js';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -167,7 +168,7 @@ export const createBooking = async (req, res) => {
         });
       }
     } catch (telegramError) {
-      console.error('Ошибка при отправке Telegram-уведомления:', telegramError.message);
+      logger.error('Ошибка при отправке Telegram-уведомления:', telegramError.message);
     }
 
     // In-app уведомления (не блокируем ответ)
@@ -196,7 +197,7 @@ export const createBooking = async (req, res) => {
       booking
     });
   } catch (error) {
-    console.error('Create booking error:', error);
+    logger.error('Create booking error:', error);
     res.status(500).json({ error: 'Ошибка при создании бронирования' });
   }
 };
@@ -276,7 +277,7 @@ export const getUserBookings = async (req, res) => {
       bookings
     });
   } catch (error) {
-    console.error('Get user bookings error:', error);
+    logger.error('Get user bookings error:', error);
     res.status(500).json({ error: 'Ошибка при получении бронирований' });
   }
 };
@@ -350,7 +351,7 @@ export const cancelBooking = async (req, res) => {
       propertyTitle: booking.property.title
     });
   } catch (error) {
-    console.error('Cancel booking error:', error);
+    logger.error('Cancel booking error:', error);
     res.status(500).json({ error: 'Ошибка при отмене бронирования' });
   }
 };
@@ -384,7 +385,7 @@ export const getBookingById = async (req, res) => {
 
     res.json({ booking });
   } catch (error) {
-    console.error('getBookingById error:', error);
+    logger.error('getBookingById error:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 };
@@ -447,7 +448,7 @@ export const getOwnerBookings = async (req, res) => {
       bookings
     });
   } catch (error) {
-    console.error('Get owner bookings error:', error);
+    logger.error('Get owner bookings error:', error);
     res.status(500).json({ error: 'Ошибка при получении бронирований' });
   }
 };
@@ -490,7 +491,7 @@ export const confirmBooking = async (req, res) => {
 
     res.json({ message: 'Бронирование подтверждено', status: newStatus });
   } catch (error) {
-    console.error('confirmBooking error:', error);
+    logger.error('confirmBooking error:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 };
@@ -530,7 +531,7 @@ export const rejectBooking = async (req, res) => {
 
     res.json({ message: 'Бронирование отклонено' });
   } catch (error) {
-    console.error('rejectBooking error:', error);
+    logger.error('rejectBooking error:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 };

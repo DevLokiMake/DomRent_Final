@@ -1,24 +1,42 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Home, Loader, Users, Building2, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Eye, EyeOff, Home, Loader, Users, Building2, MailCheck } from 'lucide-react';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
-import type { AuthResponse } from '../types';
+import type { RegisterResponse } from '../types';
+
+const PASSWORD_MIN_LENGTH = 8;
+
+const getPasswordIssue = (password: string): string | null => {
+  if (password.length === 0) return null;
+  if (password.length < PASSWORD_MIN_LENGTH) return `Ещё ${PASSWORD_MIN_LENGTH - password.length} символов`;
+  if (!/[A-Za-zА-Яа-яЁё]/.test(password)) return 'Добавьте хотя бы одну букву';
+  if (!/[0-9]/.test(password)) return 'Добавьте хотя бы одну цифру';
+  return null;
+};
 
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({ email: '', password: '', name: '', role: 'USER' as 'USER' | 'LANDLORD' });
+  const [formData, setFormData] = useState({
+    email: '', password: '', confirmPassword: '', name: '', role: 'USER' as 'USER' | 'LANDLORD',
+    website: '', // honeypot — скрытое поле, реальные пользователи его не видят и не заполняют
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
+
+  const passwordIssue = getPasswordIssue(formData.password);
+  const confirmMismatch = formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    setLoading(true);
     setError('');
+
+    if (passwordIssue) { setError(passwordIssue); return; }
+    if (formData.password !== formData.confirmPassword) { setError('Пароли не совпадают'); return; }
+
+    setLoading(true);
 
     const payload: Record<string, string> = {
       email: formData.email.trim(),
@@ -26,13 +44,11 @@ const RegisterPage = () => {
       role: formData.role,
     };
     if (formData.name.trim()) payload.name = formData.name.trim();
+    if (formData.website) payload.website = formData.website;
 
     try {
-      const res = await api.post<AuthResponse>('/auth/register', payload);
-      // Auto-login after registration
-      login(res.data.user, res.data.token);
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 1200);
+      const res = await api.post<RegisterResponse>('/auth/register', payload);
+      setRegisteredEmail(res.data.email);
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { error?: string; details?: { message: string }[] } } };
       const details = axiosError.response?.data?.details;
@@ -46,15 +62,47 @@ const RegisterPage = () => {
     }
   };
 
-  if (success) {
+  const handleResend = async () => {
+    if (resendState === 'sending' || !registeredEmail) return;
+    setResendState('sending');
+    try {
+      await api.post('/auth/resend-verification', { email: registeredEmail });
+      setResendState('sent');
+    } catch {
+      setResendState('idle');
+    }
+  };
+
+  if (registeredEmail) {
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-white dark:bg-gray-950">
-        <div className="text-center">
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-6 bg-white dark:bg-gray-950">
+        <div className="w-full max-w-md text-center">
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-500" />
+            <MailCheck className="w-8 h-8 text-green-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Добро пожаловать!</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Аккаунт создан. Переходим...</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Проверьте почту</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">
+            Мы отправили письмо на <span className="font-semibold text-gray-700 dark:text-gray-300">{registeredEmail}</span>.
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+            Перейдите по ссылке в письме, чтобы подтвердить email и войти в аккаунт.
+          </p>
+
+          <button
+            onClick={handleResend}
+            disabled={resendState !== 'idle'}
+            className="text-sm font-semibold text-gray-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
+          >
+            {resendState === 'sending' && 'Отправляем...'}
+            {resendState === 'sent' && 'Письмо отправлено повторно'}
+            {resendState === 'idle' && 'Не пришло письмо? Отправить ещё раз'}
+          </button>
+
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
+            <Link to="/login" className="font-semibold text-gray-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+              Вернуться ко входу
+            </Link>
+          </p>
         </div>
       </div>
     );
@@ -81,6 +129,18 @@ const RegisterPage = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Honeypot — скрыто от людей, видно ботам, заполнение = автоматическая блокировка на бэкенде */}
+          <input
+            type="text"
+            name="website"
+            value={formData.website}
+            onChange={e => setFormData(p => ({ ...p, website: e.target.value }))}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="absolute -left-[9999px] w-px h-px opacity-0"
+          />
+
           {/* Role selector FIRST — most important choice */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Кто вы?</label>
@@ -143,11 +203,11 @@ const RegisterPage = () => {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Минимум 6 символов"
+                placeholder="Минимум 8 символов, буквы и цифры"
                 value={formData.password}
                 onChange={e => setFormData(p => ({ ...p, password: e.target.value }))}
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-2xl text-sm outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 pr-12"
               />
@@ -159,14 +219,31 @@ const RegisterPage = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {formData.password.length > 0 && formData.password.length < 6 && (
-              <p className="text-xs text-red-500 mt-1">Ещё {6 - formData.password.length} символов</p>
+            {passwordIssue && (
+              <p className="text-xs text-red-500 mt-1">{passwordIssue}</p>
+            )}
+          </div>
+
+          {/* Confirm password */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Повторите пароль</label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Повторите пароль"
+              value={formData.confirmPassword}
+              onChange={e => setFormData(p => ({ ...p, confirmPassword: e.target.value }))}
+              required
+              autoComplete="new-password"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-2xl text-sm outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
+            />
+            {confirmMismatch && (
+              <p className="text-xs text-red-500 mt-1">Пароли не совпадают</p>
             )}
           </div>
 
           <button
             type="submit"
-            disabled={loading || !formData.email || formData.password.length < 6}
+            disabled={loading || !formData.email || !!passwordIssue || confirmMismatch || !formData.confirmPassword}
             className="w-full py-3.5 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-semibold rounded-2xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading

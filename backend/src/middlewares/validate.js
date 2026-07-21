@@ -1,17 +1,27 @@
 import { z } from 'zod';
+import logger from '../config/logger.js';
 
 /**
  * Schemas для валидации данных
  */
 
+// Требования к паролю едины для регистрации и сброса пароля
+const passwordSchema = z.string()
+  .min(8, 'Пароль должен быть минимум 8 символов')
+  .regex(/[A-Za-zА-Яа-яЁё]/, 'Пароль должен содержать хотя бы одну букву')
+  .regex(/[0-9]/, 'Пароль должен содержать хотя бы одну цифру');
+
 // Регистрация пользователя
 export const registerSchema = z.object({
   email: z.string().email('Email должен быть валидным'),
-  password: z.string().min(6, 'Пароль должен быть минимум 6 символов'),
+  password: passwordSchema,
   name: z.string().transform(v => v.trim() || undefined).optional(),
-  phone: z.string().transform(v => v.trim() || undefined).optional(),
+  phone: z.string().transform(v => v.trim() || undefined).optional()
+    .refine(v => !v || /^\+?[0-9\s\-()]{7,20}$/.test(v), 'Введите корректный номер телефона'),
   // Разрешаем только USER/LANDLORD при регистрации — ADMIN назначается только через admin-панель
-  role: z.enum(['USER', 'LANDLORD']).optional().default('USER')
+  role: z.enum(['USER', 'LANDLORD']).optional().default('USER'),
+  // Honeypot: скрытое поле формы. Реальные пользователи его не видят и не заполняют.
+  website: z.string().optional(),
 });
 
 // Вход пользователя
@@ -82,7 +92,50 @@ export const forgotPasswordSchema = z.object({
 // Сброс пароля
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token обязателен'),
-  password: z.string().min(6, 'Пароль минимум 6 символов')
+  password: passwordSchema
+});
+
+// Подтверждение email
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, 'Token обязателен')
+});
+
+// Повторная отправка письма подтверждения
+export const resendVerificationSchema = z.object({
+  email: z.string().email('Введите корректный email')
+});
+
+// Admin: бан/разбан пользователя
+export const banUserSchema = z.object({
+  banned: z.boolean({ errorMap: () => ({ message: 'Поле banned должно быть boolean' }) })
+});
+
+// Admin: смена роли пользователя
+export const changeRoleSchema = z.object({
+  role: z.enum(['USER', 'LANDLORD', 'ADMIN'], {
+    errorMap: () => ({ message: 'Допустимые роли: USER, LANDLORD, ADMIN' })
+  })
+});
+
+// Ручная блокировка/разблокировка дат объекта
+export const blockedDatesSchema = z.object({
+  dates: z.array(z.string().min(1)).min(1, 'Передайте массив дат'),
+  reason: z.string().optional().default('manual'),
+});
+
+export const unblockDatesSchema = z.object({
+  dates: z.array(z.string().min(1)).min(1, 'Передайте массив дат'),
+});
+
+// Отправка сообщения в чате бронирования
+export const sendMessageSchema = z.object({
+  text: z.string().trim().min(1, 'Сообщение не может быть пустым').max(2000, 'Сообщение слишком длинное (максимум 2000 символов)')
+});
+
+// Query-параметры истории ценового индекса
+export const priceHistoryQuerySchema = z.object({
+  cityId: z.coerce.number().int().positive().optional(),
+  contractType: z.enum(['RENT', 'SALE']).optional(),
 });
 
 /**
@@ -115,7 +168,7 @@ export const validate = (schema) => {
       req.body = parsed.data;
       next();
     } catch (error) {
-      console.error('Validation error:', error);
+      logger.error('Validation error:', error);
       res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
   };
@@ -148,7 +201,7 @@ export const validateQuery = (schema) => {
       req.query = parsed.data;
       next();
     } catch (error) {
-      console.error('Query validation error:', error);
+      logger.error('Query validation error:', error);
       res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
   };

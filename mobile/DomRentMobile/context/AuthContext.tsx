@@ -11,7 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isSignedIn: boolean;
   signOut: () => Promise<void>;
-  signup: (email: string, password: string, name: string, role?: 'USER' | 'LANDLORD') => Promise<void>;
+  signup: (email: string, password: string, name: string, role?: 'USER' | 'LANDLORD') => Promise<{ requiresVerification: boolean }>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     password: string,
     name: string,
     role: 'USER' | 'LANDLORD' = 'USER'
-  ) => {
+  ): Promise<{ requiresVerification: boolean }> => {
     try {
       setIsLoading(true);
 
@@ -98,10 +98,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Обновляем заголовок по умолчанию для axios
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        return { requiresVerification: false };
       }
-    } catch (error) {
+
+      // Бэкенд теперь требует подтверждение email — токен выдаётся только после /auth/verify-email.
+      // Аккаунт создан, но вход пока недоступен.
+      return { requiresVerification: true };
+    } catch (error: any) {
       console.error('Signup error:', error);
-      throw error;
+      const message = error?.response?.data?.error;
+      throw message ? new Error(message) : error;
     } finally {
       setIsLoading(false);
     }
@@ -131,9 +137,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Обновляем заголовок по умолчанию для axios
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      throw error;
+      const message = error?.response?.data?.error;
+      throw message ? new Error(message) : error;
     } finally {
       setIsLoading(false);
     }
@@ -145,6 +152,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     try {
       setIsLoading(true);
+
+      // Отзываем токен на бэкенде (best-effort, до очистки локального хранилища —
+      // иначе он остаётся рабочим до истечения 7-дневного срока)
+      try {
+        await axiosInstance.post('/auth/logout');
+      } catch {
+        // Оффлайн/сервер недоступен — всё равно логаутим локально
+      }
 
       // Удаляем токен из защищённого хранилища
       await SecureStore.deleteItemAsync('authToken');

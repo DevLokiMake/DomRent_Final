@@ -1,21 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
 /**
- * Создание нового объекта недвижимости (только для LANDLORD)
+ * Создание нового объекта недвижимости (LANDLORD/ADMIN — роль проверяется в route через requireLandlord)
  * @param {Object} req - Express request объект (body уже валидирован middleware)
  * @param {Object} res - Express response объект
  */
 export const createProperty = async (req, res) => {
   try {
-    // Проверка роли пользователя
-    if (req.user.role !== 'LANDLORD') {
-      return res.status(403).json({ 
-        error: 'Только арендодатели могут добавлять объекты' 
-      });
-    }
-
     const {
       title, description, price, type, contractType, city, images, coverImage,
       latitude, longitude, rooms, hasWifi, hasParking, petsAllowed
@@ -70,7 +64,7 @@ export const createProperty = async (req, res) => {
       property
     });
   } catch (error) {
-    console.error('Create property error:', error);
+    logger.error('Create property error:', error);
     res.status(500).json({ error: 'Ошибка при создании объекта' });
   }
 };
@@ -133,7 +127,7 @@ export const getAllProperties = async (req, res) => {
 
     res.json({ count: properties.length, properties });
   } catch (error) {
-    console.error('Get all properties error:', error);
+    logger.error('Get all properties error:', error);
     res.status(500).json({ error: 'Ошибка при получении объектов' });
   }
 };
@@ -208,7 +202,7 @@ export const getPropertyById = async (req, res) => {
 
     res.json({ property });
   } catch (error) {
-    console.error('Get property by ID error:', error);
+    logger.error('Get property by ID error:', error);
     res.status(500).json({ error: 'Ошибка при получении объекта' });
   }
 };
@@ -261,7 +255,7 @@ export const deleteProperty = async (req, res) => {
 
     res.json({ message: 'Объект успешно удален' });
   } catch (error) {
-    console.error('Delete property error:', error);
+    logger.error('Delete property error:', error);
     res.status(500).json({ error: 'Ошибка при удалении объекта' });
   }
 };
@@ -346,7 +340,7 @@ export const updateProperty = async (req, res) => {
       property: updatedProperty
     });
   } catch (error) {
-    console.error('Update property error:', error);
+    logger.error('Update property error:', error);
     res.status(500).json({ error: 'Ошибка при обновлении объекта' });
   }
 };
@@ -370,7 +364,7 @@ export const getPopularProperties = async (req, res) => {
     });
     res.json({ properties });
   } catch (error) {
-    console.error('getPopularProperties error:', error);
+    logger.error('getPopularProperties error:', error);
     res.status(500).json({ error: 'Ошибка' });
   }
 };
@@ -420,7 +414,7 @@ export const getSimilarProperties = async (req, res) => {
 
     res.json({ properties: similar });
   } catch (error) {
-    console.error('getSimilarProperties error:', error);
+    logger.error('getSimilarProperties error:', error);
     res.status(500).json({ error: 'Ошибка' });
   }
 };
@@ -442,7 +436,7 @@ export const getMyProperties = async (req, res) => {
     });
     res.json({ properties });
   } catch (error) {
-    console.error('getMyProperties error:', error);
+    logger.error('getMyProperties error:', error);
     res.status(500).json({ error: 'Ошибка' });
   }
 };
@@ -504,7 +498,7 @@ export const getNearbyProperties = async (req, res) => {
 
     res.json({ count: nearby.length, properties: nearby });
   } catch (error) {
-    console.error('Get nearby properties error:', error);
+    logger.error('Get nearby properties error:', error);
     res.status(500).json({ error: 'Ошибка при поиске объектов рядом' });
   }
 };

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { createNotification } from './notificationController.js';
+import logger from '../config/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -81,7 +82,7 @@ export const createReview = async (req, res) => {
 
     res.status(201).json({ message: 'Отзыв успешно добавлен', review: safeReview });
   } catch (error) {
-    console.error('createReview error:', error);
+    logger.error('createReview error:', error);
     res.status(500).json({ error: 'Ошибка при создании отзыва' });
   }
 };
@@ -115,7 +116,7 @@ export const getPropertyReviews = async (req, res) => {
 
     res.json({ count: reviews.length, avgRating, reviews: safeReviews });
   } catch (error) {
-    console.error('getPropertyReviews error:', error);
+    logger.error('getPropertyReviews error:', error);
     res.status(500).json({ error: 'Ошибка при получении отзывов' });
   }
 };

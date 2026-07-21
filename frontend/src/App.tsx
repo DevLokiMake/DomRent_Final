@@ -12,9 +12,13 @@ import CreatePropertyPage from "./pages/CreatePropertyPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
 import LandlordStatisticsPage from "./pages/LandlordStatisticsPage";
+import MarketStatsPage from "./pages/MarketStatsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ConnectionBanner from "./components/ConnectionBanner";
 import NotFoundPage from "./pages/NotFoundPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
@@ -283,6 +287,16 @@ const Navbar = () => {
             >
               {t('nav.home')}
             </Link>
+            <Link
+              to="/market-stats"
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                isActive("/market-stats")
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              {t('nav.marketStats')}
+            </Link>
             {user && (
               <Link
                 to="/bookings"
@@ -446,6 +460,9 @@ const Navbar = () => {
             <Link to="/" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
               <Home className="w-4 h-4 text-gray-400" />{t('nav.home')}
             </Link>
+            <Link to="/market-stats" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <TrendingUp className="w-4 h-4 text-gray-400" />{t('nav.marketStats')}
+            </Link>
             {user && (
               <>
                 <Link to="/bookings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -492,9 +509,11 @@ const Navbar = () => {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <BrowserRouter>
         <div className="min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors duration-200">
+          <ConnectionBanner />
           <Navbar />
           <main>
             <Routes>
@@ -508,15 +527,18 @@ export default function App() {
               <Route path="/chat/:bookingId" element={<ChatPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/landlord/statistics" element={<LandlordStatisticsPage />} />
+              <Route path="/market-stats" element={<MarketStatsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </main>
         </div>
       </BrowserRouter>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

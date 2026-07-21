@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+# DomRent Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Мобильное приложение DomRent на Expo (React Native + expo-router).
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Запуск
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Откройте в [development build](https://docs.expo.dev/develop/development-builds/introduction/), Android/iOS эмуляторе или [Expo Go](https://expo.dev/go).
 
-## Learn more
+### ⚠️ Настройка API endpoint (важно для iOS/реального устройства)
 
-To learn more about developing your project with Expo, look at the following resources:
+По умолчанию (`api/axios.ts`, `getBaseURL()`):
+- **Android эмулятор** — `http://10.0.2.2:5000/api` работает из коробки.
+- **iOS эмулятор / реальное устройство** — `http://localhost:5000/api` **не работает**, нужно указать IP компьютера в локальной сети.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Как исправить:
+1. Узнайте IP компьютера: `ipconfig` (Windows) / `ifconfig` или `ip addr` (Mac/Linux).
+2. В `api/axios.ts` замените `localhost` на этот IP для iOS-ветки `getBaseURL()`.
+3. Компьютер и устройство должны быть в одной Wi-Fi сети, порт 5000 не должен блокироваться файрволом.
+4. Пересоберите приложение (`npm run ios` / `npm run android`).
 
-## Join the community
+Если после этого всё равно `Network Error` — проверьте, что бэкенд (`backend/`) запущен и IP указан верно.
 
-Join our community of developers creating universal apps.
+## Авторизация
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+`context/AuthContext.tsx` управляет состоянием авторизации:
+- **SecureStore** — хранит JWT (`authToken`).
+- **AsyncStorage** — кэширует данные пользователя для быстрого старта.
+- **Axios interceptors** (`api/axios.ts`) — автоматически добавляют `Authorization: Bearer <token>` к каждому запросу; при 401 токен и данные пользователя должны сбрасываться и пользователь — перенаправляться на `/login`.
+
+Основные методы контекста: `login`, `signup`, `logout`, `restoreSession`, а также состояния `user`, `token`, `isLoading`, `isAuthenticated`.
+
+Регистрация (`signup`) теперь требует подтверждения email перед входом — бэкенд не выдаёт токен сразу, а отправляет письмо со ссылкой подтверждения. `signup()` возвращает `{ requiresVerification: boolean }`; см. `app/register.tsx` для примера обработки.
+
+## Архитектура экрана объекта (`app/property/[id].tsx`)
+
+Логика и UI разделены:
+
+```
+app/property/[id].tsx          — экран-оркестратор (вызывает хук, передаёт props компонентам)
+hooks/usePropertyDetails.ts    — вся бизнес-логика: запросы к API, состояние, расчёты, обработчики
+components/property/
+  ├── PropertyImageCarousel.tsx  — карусель изображений
+  ├── PropertyHeader.tsx         — название, цена, город/тип, избранное
+  ├── PropertyOwnerInfo.tsx      — описание + карточка владельца
+  └── BookingForm.tsx            — выбор дат, расчёт стоимости, кнопка бронирования
+```
+
+Этот паттерн (хук с бизнес-логикой + чистые UI-компоненты + тонкий экран-обёртка) стоит переиспользовать при рефакторинге других крупных экранов.
+
+## Экран поиска (`app/(tabs)/explore.tsx`)
+
+Список объектов через `FlatList` (виртуализация) с модальным окном фильтров (город, тип жилья, диапазон цен). Запрос: `GET /properties?city=...&type=...&minPrice=...&maxPrice=...`. Состояния: загрузка / успех / ошибка с повтором / пусто.
+
+Ручной чек-лист тестирования этого экрана (загрузка, карточки, фильтры, пустое состояние, ошибки сети, производительность FlatList на 100+ элементах) — см. в истории репозитория при необходимости; автотестов для мобильного приложения пока нет (см. корневой обзор проекта).
+
+## Структура
+
+```
+app/            — экраны (expo-router, file-based routing)
+components/     — переиспользуемые UI-компоненты
+context/        — AuthContext и др.
+hooks/          — бизнес-логика экранов
+api/            — axios-клиент
+types/          — общие TypeScript-типы
+```
